@@ -16,12 +16,39 @@ class TelegramService {
     this.bot.onText(/\/send (.+)/, this.handleSend.bind(this));
     this.bot.onText(/\/address/, this.handleAddress.bind(this));
     this.bot.onText(/\/walletId/, this.handleWalletId.bind(this));
+    this.bot.onText(/\/network (.+)/, this.handleNetwork.bind(this));
+    this.bot.onText(/\/networks/, this.handleListNetworks.bind(this));
   }
 
   async handleStart(msg) {
     const chatId = msg.chat.id;
-    const message = `Welcome to Circle Wallet Bot!\n\nCommands:\n/createWallet - Create a wallet\n/address - Get wallet address\n/walletId - Get wallet ID\n/balance - Check USDC balance\n/send <address> <amount> - Send USDC`;
+    const message = `Welcome to Circle Wallet Bot!\n\nCommands:\n/createWallet - Create a wallet\n/address - Get wallet address\n/walletId - Get wallet ID\n/balance - Check USDC balance\n/send <address> <amount> - Send USDC\n/network <network> - Switch network\n/networks - List available networks`;
     await this.bot.sendMessage(chatId, message);
+  }
+
+  async handleNetwork(msg, match) {
+    const chatId = msg.chat.id;
+    const networkName = match[1].toUpperCase();
+    
+    try {
+      const networkService = require('./networkService');
+      const network = networkService.setNetwork(networkName);
+      await this.bot.sendMessage(chatId, `Switched to network: ${network.name} ${network.isTestnet ? '(Testnet)' : ''}\nUSDC Address: ${network.usdcAddress}`);
+    } catch (error) {
+      await this.bot.sendMessage(chatId, `Error: Invalid network. Use /networks to see available networks.`);
+    }
+  }
+
+  async handleListNetworks(msg) {
+    const chatId = msg.chat.id;
+    const networkService = require('./networkService');
+    const networks = networkService.getAllNetworks();
+    
+    const networksMessage = Object.entries(networks)
+      .map(([key, network]) => `${network.name} ${network.isTestnet ? '(Testnet)' : ''}`)
+      .join('\n');
+    
+    await this.bot.sendMessage(chatId, `Available networks:\n${networksMessage}\n\nUse /network <name> to switch networks`);
   }
 
   async handleCreateWallet(msg) {
