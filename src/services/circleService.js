@@ -223,7 +223,7 @@ class CircleService {
         chatId,
         "Step 2/4: Waiting for approval confirmation...",
       );
-      await this.walletSDK.waitForTransaction(approveTx.data.transaction.id);
+      await this.walletSDK.waitForTransaction(transactionId);
       await this.bot.sendMessage(chatId, "✅ Approval confirmed!");
 
       // 3. Create burn transaction
