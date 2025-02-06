@@ -161,21 +161,30 @@ class CircleService {
       const networks = networkService.getAllNetworks();
       const currentNetwork = networkService.getCurrentNetwork();
       const sourceNetworkConfig = networks[currentNetwork.name];
-      
+
       if (!sourceNetworkConfig || !CCTP.contracts[currentNetwork.name]) {
-        throw new Error(`Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`);
+        throw new Error(
+          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+        );
       }
 
       if (!CCTP.contracts[destinationNetwork]) {
-        throw new Error(`Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`);
+        throw new Error(
+          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+        );
       }
 
       if (currentNetwork.name === destinationNetwork) {
-        throw new Error(`Destination network (${destinationNetwork}) cannot be the same as source network (${currentNetwork.name})`);
+        throw new Error(
+          `Destination network (${destinationNetwork}) cannot be the same as source network (${currentNetwork.name})`,
+        );
       }
 
       // 1. Approve USDC transfer
-      await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 1/4: Approving USDC transfer...",
+      );
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         tokenId: sourceNetworkConfig.usdcTokenId,
@@ -183,10 +192,16 @@ class CircleService {
         destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
         amounts: [amount],
       });
-      await this.bot.sendMessage(chatId, `✅ Approval transaction submitted: ${approveTx.data.transaction.id}`);
+      await this.bot.sendMessage(
+        chatId,
+        `✅ Approval transaction submitted: ${approveTx.data.transaction.id}`,
+      );
 
       // 2. Wait for approval
-      await this.bot.sendMessage(chatId, "Step 2/4: Waiting for approval confirmation...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 2/4: Waiting for approval confirmation...",
+      );
       await this.walletSDK.waitForTransaction(approveTx.data.transaction.id);
       await this.bot.sendMessage(chatId, "✅ Approval confirmed!");
 
@@ -212,7 +227,10 @@ class CircleService {
         ],
       });
 
-      await this.bot.sendMessage(chatId, `✅ Burn transaction submitted: ${burnTx.data.transaction.id}`);
+      await this.bot.sendMessage(
+        chatId,
+        `✅ Burn transaction submitted: ${burnTx.data.transaction.id}`,
+      );
 
       // 4. Wait for burn transaction
       await this.bot.sendMessage(chatId, "Waiting for burn confirmation...");
@@ -222,7 +240,10 @@ class CircleService {
       await this.bot.sendMessage(chatId, "✅ Burn confirmed!");
 
       // 5. Get attestation
-      await this.bot.sendMessage(chatId, "Step 4/4: Waiting for attestation...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 4/4: Waiting for attestation...",
+      );
       const attestation = await this.waitForAttestation(
         CCTP.domains[currentNetwork.name],
         burnReceipt.transactionHash,
@@ -230,7 +251,10 @@ class CircleService {
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
       // 6. Receive on destination chain
-      await this.bot.sendMessage(chatId, "Finalizing transfer on destination chain...");
+      await this.bot.sendMessage(
+        chatId,
+        "Finalizing transfer on destination chain...",
+      );
       const receiveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         type: "contract_call",
