@@ -1,5 +1,9 @@
 require('dotenv').config();
 
+if (!process.env.CIRCLE_API_KEY || !process.env.CIRCLE_ENTITY_SECRET) {
+  throw new Error("Circle API key and entity secret must be set in environment variables");
+}
+
 module.exports = {
   circle: {
     apiKey: process.env.CIRCLE_API_KEY,

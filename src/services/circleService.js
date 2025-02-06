@@ -12,12 +12,17 @@ const CCTP = require("../config/cctp.js");
 
 class CircleService {
   constructor(bot) {
-    this.config = require("../config/index.js");
-    if (!this.config || !this.config.circle) {
-      throw new Error("Circle configuration is missing");
+    try {
+      this.config = require("../config/index.js");
+      if (!this.config?.circle?.apiKey || !this.config?.circle?.entitySecret) {
+        throw new Error("Circle API key or entity secret is missing");
+      }
+      this.walletSDK = null;
+      this.bot = bot;
+    } catch (error) {
+      console.error("CircleService initialization error:", error);
+      throw new Error("Failed to initialize CircleService: " + error.message);
     }
-    this.walletSDK = null;
-    this.bot = bot;
   }
 
   async init() {

@@ -7,10 +7,20 @@ const CCTP = require("../config/cctp.js");
 
 class TelegramService {
   constructor() {
-    this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
-    this.circleService = new CircleService(this.bot);
-    this.setupCommands();
-    this.initializeCircleSDK();
+    try {
+      if (!config?.telegram?.botToken) {
+        throw new Error("Telegram bot token is missing");
+      }
+      this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
+      this.circleService = new CircleService(this.bot);
+      this.setupCommands();
+      this.initializeCircleSDK().catch(error => {
+        console.error("Failed to initialize Circle SDK:", error);
+      });
+    } catch (error) {
+      console.error("TelegramService initialization error:", error);
+      throw error;
+    }
   }
 
   async initializeCircleSDK() {
