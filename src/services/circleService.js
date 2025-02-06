@@ -63,10 +63,11 @@ class CircleService {
     }
   }
 
-  async getWalletBalance(walletId, networkName) {
+  async getWalletBalance(walletId) {
     try {
       const networkService = require('./networkService');
       const network = networkService.getCurrentNetwork();
+      const wallets = require('../../data/wallets.json');
 
       const response = await axios.get(
         `https://api.circle.com/v1/w3s/wallets/${walletId}/balances`,

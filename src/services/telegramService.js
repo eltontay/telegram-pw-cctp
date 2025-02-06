@@ -115,10 +115,11 @@ class TelegramService {
   async handleBalance(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    const currentNetwork = networkService.getCurrentNetwork().name;
 
     try {
-      const wallet = storageService.getWallet(userId);
-      if (!wallet) {
+      const wallets = storageService.getWallet(userId);
+      if (!wallets || !wallets[currentNetwork]) {
         await this.bot.sendMessage(
           chatId,
           "Create a wallet first with /createWallet",
@@ -126,7 +127,7 @@ class TelegramService {
         return;
       }
 
-      const balance = await circleService.getWalletBalance(wallet.walletId);
+      const balance = await circleService.getWalletBalance(wallets[currentNetwork].walletId);
       await this.bot.sendMessage(
         chatId,
         `USDC Balance on ${balance.network}: ${balance.usdc} USDC`,
