@@ -163,6 +163,10 @@ class CircleService {
         throw new Error(`Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`);
       }
 
+      if (currentNetwork.name === destinationNetwork) {
+        throw new Error(`Destination network (${destinationNetwork}) cannot be the same as source network (${currentNetwork.name})`);
+      }
+
       // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
