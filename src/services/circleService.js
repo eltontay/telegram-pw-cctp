@@ -123,6 +123,11 @@ class CircleService {
   async crossChainTransfer(walletId, sourceNetwork, destinationNetwork, destinationAddress, amount) {
     try {
       const CCTP = require('../config/cctp');
+      const networkService = require('./networkService');
+      
+      if (!CCTP.contracts[sourceNetwork] || !CCTP.contracts[destinationNetwork]) {
+        throw new Error('Invalid network configuration');
+      }
       
       // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({

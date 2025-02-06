@@ -1,4 +1,3 @@
-
 const networks = require('../../data/networks.json');
 
 class NetworkService {
@@ -23,7 +22,8 @@ class NetworkService {
   }
 
   isValidNetwork(networkName) {
-    return networks.hasOwnProperty(networkName.toUpperCase());
+    const CCTP = require('../config/cctp');
+    return !!CCTP.domains[networkName];
   }
 }
 
