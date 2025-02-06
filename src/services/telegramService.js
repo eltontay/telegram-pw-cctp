@@ -267,8 +267,8 @@ class TelegramService {
         return;
       }
 
-      const wallet = wallet[sourceNetworkUpper];
-      if (!wallet) {
+      const userWallet = wallet[sourceNetworkUpper];
+      if (!userWallet) {
         await this.bot.sendMessage(
           chatId,
           `No wallet found for ${sourceNetwork}. Create one first with /createWallet`,
