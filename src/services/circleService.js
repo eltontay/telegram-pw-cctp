@@ -5,7 +5,7 @@ const {
   SmartContractPlatformSDK,
 } = require("@circle-fin/smart-contract-platform");
 const { v4: uuidv4 } = require("uuid");
-const config = require("../config");
+const config = require("../config/index.js");
 const networkService = require("./networkService");
 
 async function getBalance(walletId, networkName) {
