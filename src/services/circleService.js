@@ -21,8 +21,8 @@ class CircleService {
 
   async init() {
     this.walletSDK = await initiateDeveloperControlledWalletsClient({
-      apiKey: config.circle.apiKey,
-      entitySecret: config.circle.entitySecret,
+      apiKey: this.config.circle.apiKey,
+      entitySecret: this.config.circle.entitySecret,
     });
   }
 
@@ -59,7 +59,7 @@ class CircleService {
         `https://api.circle.com/v1/w3s/wallets/${walletId}/balances`,
         {
           headers: {
-            Authorization: `Bearer ${config.circle.apiKey}`,
+            Authorization: `Bearer ${this.config.circle.apiKey}`,
           },
         },
       );
@@ -111,7 +111,7 @@ class CircleService {
         `https://api.circle.com/v1/w3s/wallets?address=${address}`,
         {
           headers: {
-            Authorization: `Bearer ${config.circle.apiKey}`,
+            Authorization: `Bearer ${this.config.circle.apiKey}`,
           },
         },
       );
@@ -216,7 +216,7 @@ class CircleService {
           `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`,
           {
             headers: {
-              Authorization: `Bearer ${config.circle.apiKey}`,
+              Authorization: `Bearer ${this.config.circle.apiKey}`,
             },
           },
         );
