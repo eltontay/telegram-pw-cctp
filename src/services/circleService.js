@@ -80,8 +80,12 @@ class CircleService {
       const balances = response.data.data.tokenBalances;
 
       // Filter and format balances for the specific network
+      const networkTokenId = network.usdcTokenId;
+      console.log('Checking balance for token ID:', networkTokenId);
+      console.log('Available balances:', balances);
+      
       const usdcBalance =
-        balances.find((b) => b.token.id === network.usdcTokenId)
+        balances.find((b) => b.token.id === networkTokenId)
           ?.amount || "0";
 
       return {
