@@ -30,7 +30,7 @@ class TelegramService {
   async handleNetwork(msg, match) {
     const chatId = msg.chat.id;
     const networkName = match[1].toUpperCase();
-    
+
     try {
       const networkService = require('./networkService');
       const network = networkService.setNetwork(networkName);
@@ -44,11 +44,11 @@ class TelegramService {
     const chatId = msg.chat.id;
     const networkService = require('./networkService');
     const networks = networkService.getAllNetworks();
-    
+
     const networksMessage = Object.entries(networks)
       .map(([key, network]) => `${network.name} ${network.isTestnet ? '(Testnet)' : ''}`)
       .join('\n');
-    
+
     await this.bot.sendMessage(chatId, `Available networks:\n${networksMessage}\n\nUse /network <name> to switch networks`);
   }
 
@@ -68,11 +68,11 @@ class TelegramService {
       const networkName = currentNetwork.name;
       const { wallets } = await circleService.createWallet(userId, [networkName]);
       const walletInfo = wallets[networkName];
-      
+
       const existingWallets = storageService.getWallet(userId) || {};
       existingWallets[networkName] = walletInfo;
       storageService.saveWallet(userId, existingWallets);
-      
+
       await this.bot.sendMessage(
         chatId,
         `Wallet created on ${networkName}!\nAddress: ${walletInfo.address}`,
@@ -175,10 +175,6 @@ class TelegramService {
       );
     }
   }
-}
-
-module.exports = new TelegramService();
-
 
   async handleCCTP(msg, match) {
     const chatId = msg.chat.id;
@@ -211,7 +207,7 @@ module.exports = new TelegramService();
       }
 
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
-      
+
       const result = await circleService.crossChainTransfer(
         wallet.walletId,
         sourceNetwork,
@@ -240,3 +236,6 @@ module.exports = new TelegramService();
       );
     }
   }
+}
+
+module.exports = new TelegramService();
