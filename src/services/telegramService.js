@@ -1,7 +1,6 @@
 const TelegramBot = require("node-telegram-bot-api");
 const config = require("../config/index.js");
 const CircleService = require("./circleService");
-const circleService = new CircleService(new TelegramBot(config.telegram.botToken, { polling: true }));
 const storageService = require("./storageService");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
@@ -9,6 +8,7 @@ const CCTP = require("../config/cctp.js");
 class TelegramService {
   constructor() {
     this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
+    this.circleService = new CircleService(this.bot);
     this.setupCommands();
   }
 

@@ -280,4 +280,4 @@ class CircleService {
   }
 }
 
-module.exports = new CircleService();
+module.exports = CircleService;
