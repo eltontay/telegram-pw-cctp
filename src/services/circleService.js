@@ -172,7 +172,7 @@ class CircleService {
         walletId: walletId,
         tokenId: sourceNetworkConfig.usdcTokenId,
         type: "approve",
-        destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
+        destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
         amounts: [amount],
       });
 
@@ -184,7 +184,7 @@ class CircleService {
       const burnTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         type: "contract_call",
-        destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
+        destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
         contractAbi: [
           "function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)",
         ],
@@ -207,7 +207,7 @@ class CircleService {
 
       // 5. Get attestation
       const attestation = await this.waitForAttestation(
-        CCTP.domains[sourceNetwork],
+        CCTP.domains[currentNetwork.name],
         burnReceipt.transactionHash,
       );
 
