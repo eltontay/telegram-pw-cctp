@@ -249,16 +249,7 @@ class TelegramService {
       const sourceNetwork = currentNetwork.name;
 
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
-      const sourceNetworkUpper = sourceNetwork.toUpperCase();
-
-      // Check if networks are supported for CCTP
-      if (sourceNetworkUpper !== currentNetwork.name) {
-        await this.bot.sendMessage(
-          chatId,
-          `You are trying to send from ${destinationNetwork} but you are currently on ${currentNetwork.name}. Use /network ${destinationNetwork} to switch networks first.`
-        );
-        return;
-      }
+      const sourceNetworkUpper = sourceNetwork;
 
 
       if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
