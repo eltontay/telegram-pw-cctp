@@ -293,43 +293,28 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
-    const startTime = Date.now();
     const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
     console.log('Starting attestation check:', url);
-    console.log('Source Domain ID:', srcDomainId);
-    console.log('Transaction Hash:', transactionHash);
-
-    // Initial delay to allow transaction mining and indexing
-    await new Promise(resolve => setTimeout(resolve, 45000)); // Increased to 45s
-    console.log('Initial wait complete, checking transaction status...');
-
+    
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    const maxAttempts = 90; // 15 minutes maximum
-    let attempt = 1;
-    let lastErrorCode = null;
-
-    while (attempt <= maxAttempts) {
-      try {
+    
+    try {
+      while (true) {
         const response = await axios.get(url, {
           headers: {
-            Authorization: `Bearer ${config.circle.apiKey}`,
-          },
-          timeout: 10000 // 10s timeout for each request
-        });
-
-        const messageStatus = response.data?.data?.messages?.[0]?.status;
-        console.log(`Attempt ${attempt}/${maxAttempts}: Status:`, messageStatus || 'pending');
-        
-        if (response.data?.data?.messages?.[0]) {
-          const { message, attestation, status } = response.data.data.messages[0];
-          if (status === 'complete') {
-            const totalTime = (Date.now() - startTime) / 1000;
-            console.log(`✅ Attestation completed in ${totalTime} seconds`);
-            return { message, attestation };
-          } else if (status === 'failed') {
-            throw new Error('Attestation failed on Circle side');
+            Authorization: `Bearer ${config.circle.apiKey}`
           }
+        });
+        
+        const attestationResponse = response.data;
+        if (attestationResponse?.messages?.length > 0 && attestationResponse.messages[0].status === 'complete') {
+          const { message, attestation } = attestationResponse.messages[0];
+          console.log(`Message attested ${url}`);
+          return { message, attestation };
         }
+        
+        await sleep(2000);
+      }
 
         if (attempt % 6 === 0) { // Log progress every minute
           const elapsed = (Date.now() - startTime) / 1000;
