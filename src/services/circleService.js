@@ -295,31 +295,29 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
+    const isAttestationComplete = (response) => {
+      return response?.messages?.length > 0 && response.messages[0].status === "complete";
+    };
+
+    const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
     try {
       while (true) {
-        const response = await axios.get(
-          `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`,
-          {
-            headers: {
-              Authorization: `Bearer ${config.circle.apiKey}`,
-            },
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${config.circle.apiKey}`,
           },
-        );
-
-        if (
-          response.data?.messages?.length > 0 &&
-          response.data.messages[0].status === "complete"
-        ) {
-          return {
-            message: response.data.messages[0].message,
-            attestation: response.data.messages[0].attestation,
-          };
+        });
+        
+        if (isAttestationComplete(response.data)) {
+          const { message, attestation } = response.data.messages[0];
+          console.log(`Message attested ${url}`);
+          return { message, attestation };
         }
-
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
-      console.error("Error getting attestation:", error);
+      console.error(`Failed to get attestation: ${error}`);
       throw error;
     }
   }
