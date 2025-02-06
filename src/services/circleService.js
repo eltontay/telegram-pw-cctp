@@ -12,15 +12,18 @@ const CCTP = require("../config/cctp.js");
 
 class CircleService {
   constructor() {
+    if (!config || !config.circle) {
+      throw new Error("Circle configuration is missing");
+    }
     this.config = config;
     this.walletSDK = null;
   }
 
   async init() {
-    if (!this.walletSDK) {
+    if (!this.walletSDK && this.config && this.config.circle) {
       this.walletSDK = await initiateDeveloperControlledWalletsClient({
-        apiKey: config.circle.apiKey,
-        entitySecret: config.circle.entitySecret,
+        apiKey: this.config.circle.apiKey,
+        entitySecret: this.config.circle.entitySecret,
       });
     }
     return this.walletSDK;
