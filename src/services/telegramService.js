@@ -279,7 +279,7 @@ class TelegramService {
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
 
       const result = await circleService.crossChainTransfer(
-        wallet.walletId,
+        userWallet.walletId,
         sourceNetwork,
         destinationNetwork.toUpperCase(),
         destinationAddress,
