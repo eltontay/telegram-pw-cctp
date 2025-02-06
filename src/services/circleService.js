@@ -299,13 +299,14 @@ class CircleService {
     console.log('Source Domain ID:', srcDomainId);
     console.log('Transaction Hash:', transactionHash);
 
-    // Initial delay to allow transaction mining
-    await new Promise(resolve => setTimeout(resolve, 30000));
-    console.log('Initial 30s wait complete, starting attestation checks...');
+    // Initial delay to allow transaction mining and indexing
+    await new Promise(resolve => setTimeout(resolve, 45000)); // Increased to 45s
+    console.log('Initial wait complete, checking transaction status...');
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    const maxAttempts = 60; // 10 minutes maximum
+    const maxAttempts = 90; // 15 minutes maximum
     let attempt = 1;
+    let lastErrorCode = null;
 
     while (attempt <= maxAttempts) {
       try {
@@ -341,11 +342,20 @@ class CircleService {
         const isTimeout = error.code === 'ECONNABORTED';
         console.error(`Attempt ${attempt}/${maxAttempts} failed:`, isTimeout ? 'Request timeout' : error.response?.data || error.message);
         
+        const errorCode = error.response?.data?.code || error.code;
+        if (errorCode !== lastErrorCode) {
+          console.log(`New error status encountered: ${JSON.stringify(error.response?.data || error.message)}`);
+          lastErrorCode = errorCode;
+        }
+        
         if (attempt === maxAttempts) {
           const totalTime = (Date.now() - startTime) / 1000;
-          throw new Error(`Attestation failed after ${totalTime} seconds: ${error.message}`);
+          throw new Error(`Attestation failed after ${totalTime} seconds. Last error: ${error.message}`);
         }
-        await sleep(10000);
+        
+        // Exponential backoff starting at 10s
+        const backoff = Math.min(10000 * Math.pow(1.1, attempt), 30000);
+        await sleep(backoff);
         attempt++;
       }
     }
