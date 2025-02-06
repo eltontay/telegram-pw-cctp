@@ -1,4 +1,3 @@
-
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
 const {
@@ -9,7 +8,7 @@ const {
 } = require("@circle-fin/smart-contract-platform");
 const config = require("../config/index.js");
 const networkService = require("./networkService");
-const CCTP = require('../config/cctp');
+const CCTP = require("../config/cctp.js");
 
 class CircleService {
   constructor() {
@@ -34,9 +33,11 @@ class CircleService {
       });
 
       const currentNetwork = networkService.getCurrentNetwork();
-      
-      const accountType = currentNetwork.name.startsWith('AVAX') ? 'EOA' : 'SCA';
-      
+
+      const accountType = currentNetwork.name.startsWith("AVAX")
+        ? "EOA"
+        : "SCA";
+
       const walletData = await this.walletSDK.createWallets({
         idempotencyKey: uuidv4(),
         blockchains: [currentNetwork.name],
@@ -66,16 +67,15 @@ class CircleService {
       const balances = response.data.data.tokenBalances;
 
       const networkTokenId = network.usdcTokenId;
-      console.log('Checking balance for token ID:', networkTokenId);
-      console.log('Available balances:', balances);
-      
+      console.log("Checking balance for token ID:", networkTokenId);
+      console.log("Available balances:", balances);
+
       const usdcBalance =
-        balances.find((b) => b.token.id === networkTokenId)
-          ?.amount || "0";
+        balances.find((b) => b.token.id === networkTokenId)?.amount || "0";
 
       return {
         usdc: usdcBalance,
-        network: network.name
+        network: network.name,
       };
     } catch (error) {
       console.error("Error getting wallet balance:", error);
@@ -113,7 +113,7 @@ class CircleService {
           headers: {
             Authorization: `Bearer ${config.circle.apiKey}`,
           },
-        }
+        },
       );
       return response.data.data.wallets[0]?.id;
     } catch (error) {
@@ -122,25 +122,34 @@ class CircleService {
     }
   }
 
-  async crossChainTransfer(walletId, sourceNetwork, destinationNetwork, destinationAddress, amount) {
+  async crossChainTransfer(
+    walletId,
+    sourceNetwork,
+    destinationNetwork,
+    destinationAddress,
+    amount,
+  ) {
     try {
       await this.init();
-      
-      if (!CCTP.contracts[sourceNetwork] || !CCTP.contracts[destinationNetwork]) {
-        throw new Error('Invalid network configuration');
+
+      if (
+        !CCTP.contracts[sourceNetwork] ||
+        !CCTP.contracts[destinationNetwork]
+      ) {
+        throw new Error("Invalid network configuration");
       }
-      
+
       const network = networkService.getCurrentNetwork();
-      
+
       // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         tokenId: network.usdcTokenId,
-        type: 'approve',
+        type: "approve",
         destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
-        amounts: [amount]
+        amounts: [amount],
       });
-      
+
       // 2. Wait for approval
       await this.walletSDK.waitForTransaction(approveTx.data.transaction.id);
 
@@ -148,44 +157,51 @@ class CircleService {
       const destinationDomain = CCTP.domains[destinationNetwork];
       const burnTx = await this.walletSDK.createTransaction({
         walletId: walletId,
-        type: 'contract_call',
+        type: "contract_call",
         destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
-        contractAbi: ['function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)'],
-        functionName: 'depositForBurn',
+        contractAbi: [
+          "function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)",
+        ],
+        functionName: "depositForBurn",
         functionArgs: [
           amount,
           destinationDomain,
-          `0x${destinationAddress.padStart(64, '0')}`,
+          `0x${destinationAddress.padStart(64, "0")}`,
           network.usdcAddress,
-          '0x' + '0'.repeat(64),
-          '0',
-          '1000'
-        ]
+          "0x" + "0".repeat(64),
+          "0",
+          "1000",
+        ],
       });
 
       // 4. Wait for burn transaction
-      const burnReceipt = await this.walletSDK.waitForTransaction(burnTx.data.transaction.id);
+      const burnReceipt = await this.walletSDK.waitForTransaction(
+        burnTx.data.transaction.id,
+      );
 
       // 5. Get attestation
       const attestation = await this.waitForAttestation(
         CCTP.domains[sourceNetwork],
-        burnReceipt.transactionHash
+        burnReceipt.transactionHash,
       );
 
       // 6. Receive on destination chain
       const receiveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
-        type: 'contract_call',
-        destinationAddress: CCTP.contracts[destinationNetwork].messageTransmitter,
-        contractAbi: ['function receiveMessage(bytes message, bytes attestation)'],
-        functionName: 'receiveMessage',
-        functionArgs: [attestation.message, attestation.attestation]
+        type: "contract_call",
+        destinationAddress:
+          CCTP.contracts[destinationNetwork].messageTransmitter,
+        contractAbi: [
+          "function receiveMessage(bytes message, bytes attestation)",
+        ],
+        functionName: "receiveMessage",
+        functionArgs: [attestation.message, attestation.attestation],
       });
 
       return {
         approveTx: approveTx.data.transaction.id,
         burnTx: burnTx.data.transaction.id,
-        receiveTx: receiveTx.data.transaction.id
+        receiveTx: receiveTx.data.transaction.id,
       };
     } catch (error) {
       console.error("Error in cross-chain transfer:", error);
@@ -202,17 +218,20 @@ class CircleService {
             headers: {
               Authorization: `Bearer ${config.circle.apiKey}`,
             },
-          }
+          },
         );
-        
-        if (response.data?.messages?.length > 0 && response.data.messages[0].status === "complete") {
+
+        if (
+          response.data?.messages?.length > 0 &&
+          response.data.messages[0].status === "complete"
+        ) {
           return {
             message: response.data.messages[0].message,
-            attestation: response.data.messages[0].attestation
+            attestation: response.data.messages[0].attestation,
           };
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error("Error getting attestation:", error);
