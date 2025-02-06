@@ -293,12 +293,16 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
-    const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
+    const url = `https://api.circle.com/v1/attestations/status`;
     try {
       while (true) {
         const response = await axios.get(url, {
           headers: {
             Authorization: `Bearer ${config.circle.apiKey}`
+          },
+          params: {
+            sourceBlockchain: srcDomainId,
+            transactionHash: transactionHash
           }
         });
         const attestationResponse = response.data;
