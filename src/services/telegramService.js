@@ -181,7 +181,7 @@ class TelegramService {
     const userId = msg.from.id.toString();
     const networkService = require('./networkService');
     const circleService = require('./circleService');
-    const storageService = require('./storageService');e');
+    const storageService = require('./storageService');
 
     try {
       const wallet = storageService.getWallet(userId);
