@@ -78,8 +78,8 @@ class TelegramService {
         await this.bot.sendMessage(
           chatId,
           `You already have a wallet on ${currentNetwork.name}!\n` +
-          `Your wallet address: ${userWallets[currentNetwork.name].address}\n\n` +
-          `Use /network <network-name> to switch networks if you want to create a wallet on another network.`,
+            `Your wallet address: ${userWallets[currentNetwork.name].address}\n\n` +
+            `Use /network <network-name> to switch networks if you want to create a wallet on another network.`,
         );
         return;
       }
@@ -87,12 +87,14 @@ class TelegramService {
       const networkName = currentNetwork.name;
       const walletResponse = await circleService.createWallet(userId);
       if (!walletResponse?.walletData?.data?.wallets?.[0]) {
-        throw new Error('Failed to create wallet - invalid response from Circle API');
+        throw new Error(
+          "Failed to create wallet - invalid response from Circle API",
+        );
       }
 
       const walletInfo = {
         walletId: walletResponse.walletId,
-        address: walletResponse.walletData.data.wallets[0].address
+        address: walletResponse.walletData.data.wallets[0].address,
       };
 
       const existingWallets = storageService.getWallet(userId) || {};
@@ -104,8 +106,11 @@ class TelegramService {
         `✅ Wallet created on ${networkName}!\nAddress: ${walletInfo.address}`,
       );
     } catch (error) {
-      console.error('Wallet creation error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+      console.error("Wallet creation error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Unknown error occurred";
       await this.bot.sendMessage(
         chatId,
         `❌ Error creating wallet: ${errorMessage}\nPlease try again later.`,
@@ -128,7 +133,9 @@ class TelegramService {
         return;
       }
 
-      const balance = await circleService.getWalletBalance(wallets[currentNetwork].walletId);
+      const balance = await circleService.getWalletBalance(
+        wallets[currentNetwork].walletId,
+      );
       await this.bot.sendMessage(
         chatId,
         `USDC Balance on ${balance.network}: ${balance.usdc} USDC`,
@@ -188,7 +195,9 @@ class TelegramService {
       const currentNetwork = networkService.getCurrentNetwork().name;
       const wallets = storageService.getWallet(userId);
       if (!wallets || !wallets[currentNetwork]) {
-        throw new Error(`No wallet found for ${currentNetwork}. Please create a wallet first using /createWallet`);
+        throw new Error(
+          `No wallet found for ${currentNetwork}. Please create a wallet first using /createWallet`,
+        );
       }
 
       const params = match[1].split(" ");
@@ -197,7 +206,10 @@ class TelegramService {
       }
 
       const [destinationAddress, amount] = params;
-      await this.bot.sendMessage(chatId, `Processing transaction on ${currentNetwork}...`);
+      await this.bot.sendMessage(
+        chatId,
+        `Processing transaction on ${currentNetwork}...`,
+      );
 
       const txResponse = await circleService.sendTransaction(
         wallets[currentNetwork].walletId,
@@ -248,38 +260,38 @@ class TelegramService {
       const currentNetwork = networkService.getCurrentNetwork();
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
 
-      if (!CCTP.domains[currentNetwork.name] || !CCTP.contracts[currentNetwork.name]) {
-        await this.bot.sendMessage(
-          chatId,
-          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
-        );
-        return;
-      }
+      // if (!CCTP.domains[currentNetwork.name] || !CCTP.contracts[currentNetwork.name]) {
+      //   await this.bot.sendMessage(
+      //     chatId,
+      //     `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
+      //   );
+      //   return;
+      // }
 
-      if (currentNetwork.name === destinationNetworkUpper) {
-        await this.bot.sendMessage(
-          chatId,
-          `Source network (${currentNetwork.name}) cannot be the same as destination network.`,
-        );
-        return;
-      }
+      // if (currentNetwork.name === destinationNetworkUpper) {
+      //   await this.bot.sendMessage(
+      //     chatId,
+      //     `Source network (${currentNetwork.name}) cannot be the same as destination network.`,
+      //   );
+      //   return;
+      // }
 
-      if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
-        await this.bot.sendMessage(
-          chatId,
-          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
-        );
-        return;
-      }
+      // if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
+      //   await this.bot.sendMessage(
+      //     chatId,
+      //     `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+      //   );
+      //   return;
+      // }
 
-      const userWallet = wallet[currentNetwork.name];
-      if (!userWallet) {
-        await this.bot.sendMessage(
-          chatId,
-          `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`,
-        );
-        return;
-      }
+      // const userWallet = wallet[currentNetwork.name];
+      // if (!userWallet) {
+      //   await this.bot.sendMessage(
+      //     chatId,
+      //     `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`,
+      //   );
+      //   return;
+      // }
 
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
 
