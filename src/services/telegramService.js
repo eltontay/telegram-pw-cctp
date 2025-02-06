@@ -3,6 +3,7 @@ const config = require("../config/index.js");
 const circleService = require("./circleService");
 const storageService = require("./storageService");
 const networkService = require("./networkService");
+const CCTP = require("../config/cctp.js");
 
 class TelegramService {
   constructor() {
