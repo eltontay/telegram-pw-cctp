@@ -260,9 +260,11 @@ class CircleService {
         chatId,
         "Step 4/4: Waiting for attestation...",
       );
+      const burnTxHash = burnTransactionId;
+      const srcDomainId = CCTP.domains[currentNetwork.name];
       const attestation = await this.waitForAttestation(
-        CCTP.domains[currentNetwork.name],
-        burnReceipt.transactionHash,
+        srcDomainId,
+        burnTxHash,
       );
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
