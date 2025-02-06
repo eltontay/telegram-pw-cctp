@@ -1,26 +1,15 @@
+
+const axios = require("axios");
+const { v4: uuidv4 } = require("uuid");
 const {
   initiateDeveloperControlledWalletsClient,
 } = require("@circle-fin/developer-controlled-wallets");
 const {
   SmartContractPlatformSDK,
 } = require("@circle-fin/smart-contract-platform");
-const { v4: uuidv4 } = require("uuid");
 const config = require("../config/index.js");
 const networkService = require("./networkService");
-
-async function getBalance(walletId, networkName) {
-  const network = networkService.setNetwork(networkName);
-  const client = await initiateDeveloperControlledWalletsClient({
-    apiKey: config.circle.apiKey,
-    entitySecret: config.circle.entitySecret,
-  });
-
-  return await client.getTokenBalance({
-    walletId,
-    tokenId: network.usdcTokenId,
-  });
-}
-const axios = require("axios");
+const CCTP = require('../config/cctp');
 
 class CircleService {
   constructor() {
@@ -44,7 +33,6 @@ class CircleService {
         name: "WalletSet 1",
       });
 
-      const networkService = require('./networkService');
       const currentNetwork = networkService.getCurrentNetwork();
       
       const accountType = currentNetwork.name.startsWith('AVAX') ? 'EOA' : 'SCA';
@@ -65,10 +53,7 @@ class CircleService {
 
   async getWalletBalance(walletId) {
     try {
-      const networkService = require('./networkService');
       const network = networkService.getCurrentNetwork();
-      const wallets = require('../../data/wallets.json');
-
       const response = await axios.get(
         `https://api.circle.com/v1/w3s/wallets/${walletId}/balances`,
         {
@@ -80,7 +65,6 @@ class CircleService {
 
       const balances = response.data.data.tokenBalances;
 
-      // Filter and format balances for the specific network
       const networkTokenId = network.usdcTokenId;
       console.log('Checking balance for token ID:', networkTokenId);
       console.log('Available balances:', balances);
@@ -101,9 +85,10 @@ class CircleService {
 
   async sendTransaction(walletId, destinationAddress, amount) {
     try {
+      const network = networkService.getCurrentNetwork();
       const response = await this.walletSDK.createTransaction({
         walletId: walletId,
-        tokenId: config.network.usdcTokenId,
+        tokenId: network.usdcTokenId,
         destinationAddress: destinationAddress,
         amounts: [amount],
         fee: {
@@ -140,15 +125,14 @@ class CircleService {
   async crossChainTransfer(walletId, sourceNetwork, destinationNetwork, destinationAddress, amount) {
     try {
       await this.init();
-      const CCTP = require('../config/cctp');
-      const networkService = require('./networkService');
       
       if (!CCTP.contracts[sourceNetwork] || !CCTP.contracts[destinationNetwork]) {
         throw new Error('Invalid network configuration');
       }
       
-      // 1. Approve USDC transfer
       const network = networkService.getCurrentNetwork();
+      
+      // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         tokenId: network.usdcTokenId,
@@ -162,7 +146,6 @@ class CircleService {
 
       // 3. Create burn transaction
       const destinationDomain = CCTP.domains[destinationNetwork];
-      const network = networkService.getCurrentNetwork();
       const burnTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         type: 'contract_call',
