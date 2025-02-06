@@ -223,27 +223,19 @@ class CircleService {
       const destinationDomain = CCTP.domains[destinationNetwork];
       const burnTx = await this.walletSDK.createTransaction({
         walletId: walletId,
-        type: "contract_call",
+        tokenId: sourceNetworkConfig.usdcTokenId,
+        type: "depositForBurn",
         destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
+        amounts: [amount],
+        destinationDomain: destinationDomain,
+        mintRecipient: `0x${destinationAddress.padStart(64, "0")}`,
+        burnToken: networks[currentNetwork.name].usdcAddress,
         fee: {
           type: "level",
           config: {
             feeLevel: "HIGH",
           },
         },
-        contractAbi: [
-          "function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)",
-        ],
-        functionName: "depositForBurn",
-        functionArgs: [
-          amount,
-          destinationDomain,
-          `0x${destinationAddress.padStart(64, "0")}`,
-          networks[currentNetwork.name].usdcAddress,
-          "0x" + "0".repeat(64),
-          "0",
-          "1000",
-        ],
       });
 
       await this.bot.sendMessage(
