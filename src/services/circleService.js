@@ -199,6 +199,12 @@ class CircleService {
         type: "approve",
         destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
         amounts: [amount],
+        fee: {
+          type: "level",
+          config: {
+            feeLevel: "HIGH",
+          },
+        },
       });
       await this.bot.sendMessage(
         chatId,
@@ -220,6 +226,12 @@ class CircleService {
         walletId: walletId,
         type: "contract_call",
         destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
+        fee: {
+          type: "level",
+          config: {
+            feeLevel: "HIGH",
+          },
+        },
         contractAbi: [
           "function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)",
         ],
