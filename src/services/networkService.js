@@ -3,7 +3,7 @@ const CCTP = require('../config/cctp');
 
 class NetworkService {
   constructor() {
-    this.currentNetwork = process.env.NETWORK || 'ARB-SEPOLIA';
+    this.currentNetwork = 'ARB-SEPOLIA';
   }
 
   setNetwork(networkName) {
