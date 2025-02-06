@@ -294,10 +294,6 @@ class CircleService {
 
   async waitForAttestation(srcDomainId, transactionHash) {
     const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
-    console.log('Starting attestation check:', url);
-    
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    
     try {
       while (true) {
         const response = await axios.get(url, {
@@ -305,47 +301,18 @@ class CircleService {
             Authorization: `Bearer ${config.circle.apiKey}`
           }
         });
-        
         const attestationResponse = response.data;
         if (attestationResponse?.messages?.length > 0 && attestationResponse.messages[0].status === 'complete') {
           const { message, attestation } = attestationResponse.messages[0];
           console.log(`Message attested ${url}`);
           return { message, attestation };
         }
-        
-        await sleep(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-
-        if (attempt % 6 === 0) { // Log progress every minute
-          const elapsed = (Date.now() - startTime) / 1000;
-          console.log(`⏳ Still waiting for attestation after ${elapsed}s...`);
-        }
-
-        await sleep(10000); // 10s between attempts
-        attempt++;
-      } catch (error) {
-        const isTimeout = error.code === 'ECONNABORTED';
-        console.error(`Attempt ${attempt}/${maxAttempts} failed:`, isTimeout ? 'Request timeout' : error.response?.data || error.message);
-        
-        const errorCode = error.response?.data?.code || error.code;
-        if (errorCode !== lastErrorCode) {
-          console.log(`New error status encountered: ${JSON.stringify(error.response?.data || error.message)}`);
-          lastErrorCode = errorCode;
-        }
-        
-        if (attempt === maxAttempts) {
-          const totalTime = (Date.now() - startTime) / 1000;
-          throw new Error(`Attestation failed after ${totalTime} seconds. Last error: ${error.message}`);
-        }
-        
-        // Exponential backoff starting at 10s
-        const backoff = Math.min(10000 * Math.pow(1.1, attempt), 30000);
-        await sleep(backoff);
-        attempt++;
-      }
+    } catch (error) {
+      console.error(`Failed to get attestation: ${error}`);
+      throw error;
     }
-
-    throw new Error('Attestation polling timed out after 10 minutes');
   }
 }
 
