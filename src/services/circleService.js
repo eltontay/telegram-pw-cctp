@@ -148,35 +148,26 @@ class CircleService {
     chatId,
   ) {
     try {
-      if (!config || !config.circle) {
-        throw new Error("Circle configuration is not properly initialized");
-      }
+      // Initialize SDK first
+      await this.init();
 
-      this.walletSDK = await this.init();
-      if (!this.walletSDK) {
-        throw new Error("Failed to initialize wallet SDK");
-      }
-
-      const networks = networkService.getAllNetworks();
+      // Validate networks
       const currentNetwork = networkService.getCurrentNetwork();
-      const sourceNetworkConfig = networks[currentNetwork.name];
-
-      if (!sourceNetworkConfig || !CCTP.contracts[currentNetwork.name]) {
+      
+      if (!CCTP.contracts[currentNetwork.name]) {
         throw new Error(
-          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`
         );
       }
 
       if (!CCTP.contracts[destinationNetwork]) {
         throw new Error(
-          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`
         );
       }
 
       if (currentNetwork.name === destinationNetwork) {
-        throw new Error(
-          `Destination network (${destinationNetwork}) cannot be the same as source network (${currentNetwork.name})`,
-        );
+        throw new Error("Source and destination networks cannot be the same");
       }
 
       // 1. Approve USDC transfer
