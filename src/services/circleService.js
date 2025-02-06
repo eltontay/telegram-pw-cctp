@@ -13,17 +13,17 @@ const CCTP = require("../config/cctp.js");
 class CircleService {
   constructor() {
     this.config = config;
-    this.walletSDK = initiateDeveloperControlledWalletsClient({
-      apiKey: config.circle.apiKey,
-      entitySecret: config.circle.entitySecret,
-    });
+    this.walletSDK = null;
   }
 
   async init() {
-    this.walletSDK = await initiateDeveloperControlledWalletsClient({
-      apiKey: this.config.circle.apiKey,
-      entitySecret: this.config.circle.entitySecret,
-    });
+    if (!this.walletSDK) {
+      this.walletSDK = await initiateDeveloperControlledWalletsClient({
+        apiKey: config.circle.apiKey,
+        entitySecret: config.circle.entitySecret,
+      });
+    }
+    return this.walletSDK;
   }
 
   async createWallet(userId) {
@@ -130,7 +130,10 @@ class CircleService {
     amount,
   ) {
     try {
-      await this.init();
+      this.walletSDK = await this.init();
+      if (!this.walletSDK) {
+        throw new Error("Failed to initialize wallet SDK");
+      }
 
       const networks = networkService.getAllNetworks();
       const sourceNetworkConfig = networks[sourceNetwork];
