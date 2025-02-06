@@ -238,15 +238,20 @@ class CircleService {
         },
       });
 
+      const burnTransactionId = burnTx?.data?.transaction?.id || burnTx?.data?.id;
+      if (!burnTransactionId) {
+        throw new Error('Failed to get burn transaction ID from response');
+      }
+
       await this.bot.sendMessage(
         chatId,
-        `✅ Burn transaction submitted: ${burnTx.data.transaction.id}`,
+        `✅ Burn transaction submitted: ${burnTransactionId}`,
       );
 
       // 4. Wait for burn transaction
       await this.bot.sendMessage(chatId, "Waiting for burn confirmation...");
       const burnReceipt = await this.walletSDK.waitForTransaction(
-        burnTx.data.transaction.id,
+        burnTransactionId,
       );
       await this.bot.sendMessage(chatId, "✅ Burn confirmed!");
 
