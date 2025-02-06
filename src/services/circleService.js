@@ -175,6 +175,9 @@ class CircleService {
         chatId,
         "Step 1/4: Approving USDC transfer...",
       );
+      const networks = require('../../data/networks.json');
+      const sourceNetworkConfig = networks[currentNetwork.name];
+
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         tokenId: sourceNetworkConfig.usdcTokenId,
@@ -210,7 +213,7 @@ class CircleService {
           amount,
           destinationDomain,
           `0x${destinationAddress.padStart(64, "0")}`,
-          sourceNetworkConfig.usdcAddress,
+          networks[currentNetwork.name].usdcAddress,
           "0x" + "0".repeat(64),
           "0",
           "1000",
