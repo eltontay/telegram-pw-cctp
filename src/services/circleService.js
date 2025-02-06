@@ -44,9 +44,12 @@ class CircleService {
         name: "WalletSet 1",
       });
 
+      const networkService = require('./networkService');
+      const currentNetwork = networkService.getCurrentNetwork();
+      
       const walletData = await this.walletSDK.createWallets({
         idempotencyKey: uuidv4(),
-        blockchains: [config.network.name],
+        blockchains: [currentNetwork.name],
         accountType: "SCA",
         walletSetId: walletSetResponse.data?.walletSet?.id ?? "",
       });
