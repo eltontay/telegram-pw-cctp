@@ -198,7 +198,7 @@ class TelegramService {
 
       const [destinationAddress, amount] = params;
       await this.bot.sendMessage(chatId, `Processing transaction on ${currentNetwork}...`);
-      
+
       const txResponse = await circleService.sendTransaction(
         wallets[currentNetwork].walletId,
         destinationAddress,
@@ -245,12 +245,22 @@ class TelegramService {
       }
 
       const [destinationNetwork, destinationAddress, amount] = params;
-      const sourceNetwork = networkService.getCurrentNetwork().name;
+      const currentNetwork = networkService.getCurrentNetwork();
+      const sourceNetwork = currentNetwork.name;
 
-      // Validate networks
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
       const sourceNetworkUpper = sourceNetwork.toUpperCase();
-      
+
+      // Check if networks are supported for CCTP
+      if (sourceNetworkUpper !== currentNetwork.name) {
+        await this.bot.sendMessage(
+          chatId,
+          `You are trying to send from ${destinationNetwork} but you are currently on ${currentNetwork.name}. Use /network ${destinationNetwork} to switch networks first.`
+        );
+        return;
+      }
+
+
       if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
