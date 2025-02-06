@@ -130,6 +130,10 @@ class CircleService {
     amount,
   ) {
     try {
+      if (!this.config || !this.config.circle) {
+        throw new Error("Circle configuration is not properly initialized");
+      }
+
       this.walletSDK = await this.init();
       if (!this.walletSDK) {
         throw new Error("Failed to initialize wallet SDK");
