@@ -24,7 +24,8 @@ const axios = require("axios");
 
 class CircleService {
   constructor() {
-    this.walletSDK = new initiateDeveloperControlledWalletsClient({
+    this.config = config;
+    this.walletSDK = initiateDeveloperControlledWalletsClient({
       apiKey: config.circle.apiKey,
       entitySecret: config.circle.entitySecret,
     });
