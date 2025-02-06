@@ -9,6 +9,10 @@
     "ETH-SEPOLIA": {
       "walletId": "33b794d7-6896-5886-ac6a-a6f987e9feff",
       "address": "0x4e6b251cd1f3aa6e170eaf1236c23bcc7126173b"
+    },
+    "AVAX-FUJI": {
+      "walletId": "30003645-0670-5d10-8ca2-7e156f122729",
+      "address": "0x7dfe9bfeff77a08716c720ee381338447193ce56"
     }
   }
 }
