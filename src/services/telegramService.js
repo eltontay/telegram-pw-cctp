@@ -76,16 +76,23 @@ class TelegramService {
       if (userWallets[currentNetwork.name]) {
         await this.bot.sendMessage(
           chatId,
-          `You already have a wallet on ${currentNetwork.name}! Use /network to switch networks if you want to create a wallet on another network.`,
+          `You already have a wallet on ${currentNetwork.name}!\n` +
+          `Your wallet address: ${userWallets[currentNetwork.name].address}\n\n` +
+          `Use /network <network-name> to switch networks if you want to create a wallet on another network.`,
         );
         return;
       }
 
       const networkName = currentNetwork.name;
-      const { wallets } = await circleService.createWallet(userId, [
-        networkName,
-      ]);
-      const walletInfo = wallets[networkName];
+      const walletResponse = await circleService.createWallet(userId);
+      if (!walletResponse?.walletData?.data?.wallets?.[0]) {
+        throw new Error('Failed to create wallet - invalid response from Circle API');
+      }
+
+      const walletInfo = {
+        walletId: walletResponse.walletId,
+        address: walletResponse.walletData.data.wallets[0].address
+      };
 
       const existingWallets = storageService.getWallet(userId) || {};
       existingWallets[networkName] = walletInfo;
@@ -93,12 +100,14 @@ class TelegramService {
 
       await this.bot.sendMessage(
         chatId,
-        `Wallet created on ${networkName}!\nAddress: ${walletInfo.address}`,
+        `✅ Wallet created on ${networkName}!\nAddress: ${walletInfo.address}`,
       );
     } catch (error) {
+      console.error('Wallet creation error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
       await this.bot.sendMessage(
         chatId,
-        "Error creating wallet. Try again later.",
+        `❌ Error creating wallet: ${errorMessage}\nPlease try again later.`,
       );
     }
   }
