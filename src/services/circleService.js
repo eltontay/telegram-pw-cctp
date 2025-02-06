@@ -6,6 +6,20 @@ const {
 } = require("@circle-fin/smart-contract-platform");
 const { v4: uuidv4 } = require("uuid");
 const config = require("../config");
+const networkService = require("./networkService");
+
+async function getBalance(walletId, networkName) {
+  const network = networkService.setNetwork(networkName);
+  const client = await initiateDeveloperControlledWalletsClient({
+    apiKey: config.circle.apiKey,
+    entitySecret: config.circle.entitySecret,
+  });
+  
+  return await client.getTokenBalance({
+    walletId,
+    tokenId: network.usdcTokenId,
+  });
+}
 const axios = require("axios");
 
 class CircleService {
