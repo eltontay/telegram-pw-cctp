@@ -299,8 +299,12 @@ class CircleService {
     console.log('Source Domain ID:', srcDomainId);
     console.log('Transaction Hash:', transactionHash);
 
+    // Initial delay to allow transaction mining
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    console.log('Initial 30s wait complete, starting attestation checks...');
+
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    const maxAttempts = 30; // 5 minutes maximum
+    const maxAttempts = 60; // 10 minutes maximum
     let attempt = 1;
 
     while (attempt <= maxAttempts) {
@@ -309,31 +313,44 @@ class CircleService {
           headers: {
             Authorization: `Bearer ${config.circle.apiKey}`,
           },
+          timeout: 10000 // 10s timeout for each request
         });
 
+        const messageStatus = response.data?.messages?.[0]?.status;
+        console.log(`Attempt ${attempt}/${maxAttempts}: Status:`, messageStatus || 'pending');
+        
         if (response.data?.messages?.[0]) {
           const { message, attestation, status } = response.data.messages[0];
-          console.log(`Attempt ${attempt}: Message Status:`, status);
-          
           if (status === 'complete') {
             const totalTime = (Date.now() - startTime) / 1000;
-            console.log(`Attestation completed in ${totalTime} seconds`);
+            console.log(`✅ Attestation completed in ${totalTime} seconds`);
             return { message, attestation };
+          } else if (status === 'failed') {
+            throw new Error('Attestation failed on Circle side');
           }
         }
 
-        console.log(`Attempt ${attempt}/${maxAttempts}: Waiting 10 seconds...`);
-        await sleep(10000);
+        if (attempt % 6 === 0) { // Log progress every minute
+          const elapsed = (Date.now() - startTime) / 1000;
+          console.log(`⏳ Still waiting for attestation after ${elapsed}s...`);
+        }
+
+        await sleep(10000); // 10s between attempts
         attempt++;
       } catch (error) {
-        console.error(`Attempt ${attempt}/${maxAttempts} failed:`, error.response?.data || error.message);
-        if (attempt === maxAttempts) throw error;
+        const isTimeout = error.code === 'ECONNABORTED';
+        console.error(`Attempt ${attempt}/${maxAttempts} failed:`, isTimeout ? 'Request timeout' : error.response?.data || error.message);
+        
+        if (attempt === maxAttempts) {
+          const totalTime = (Date.now() - startTime) / 1000;
+          throw new Error(`Attestation failed after ${totalTime} seconds: ${error.message}`);
+        }
         await sleep(10000);
         attempt++;
       }
     }
 
-    throw new Error('Attestation polling timed out after 5 minutes');
+    throw new Error('Attestation polling timed out after 10 minutes');
   }
 }
 
