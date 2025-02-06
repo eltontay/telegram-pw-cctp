@@ -251,18 +251,18 @@ class TelegramService {
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
       const sourceNetworkUpper = sourceNetwork.toUpperCase();
       
-      if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
+      if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
-          "Invalid destination network. Supported networks for CCTP: " + Object.keys(CCTP.domains).join(", "),
+          `Invalid source network: ${sourceNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
         );
         return;
       }
 
-      if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
+      if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
-          `Invalid source network: ${sourceNetwork}. Please switch to a supported network first.`,
+          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
         );
         return;
       }
