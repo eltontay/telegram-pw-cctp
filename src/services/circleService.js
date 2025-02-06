@@ -293,36 +293,47 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
+    const startTime = Date.now();
     const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
-    console.log('Checking attestation URL:', url);
+    console.log('Starting attestation check:', url);
     console.log('Source Domain ID:', srcDomainId);
     console.log('Transaction Hash:', transactionHash);
 
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${config.circle.apiKey}`,
-        },
-      });
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const maxAttempts = 30; // 5 minutes maximum
+    let attempt = 1;
 
-      console.log('Attestation API Response:', JSON.stringify(response.data, null, 2));
+    while (attempt <= maxAttempts) {
+      try {
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${config.circle.apiKey}`,
+          },
+        });
 
-      if (!response.data?.messages?.[0]) {
-        throw new Error('No messages found in attestation response');
+        if (response.data?.messages?.[0]) {
+          const { message, attestation, status } = response.data.messages[0];
+          console.log(`Attempt ${attempt}: Message Status:`, status);
+          
+          if (status === 'complete') {
+            const totalTime = (Date.now() - startTime) / 1000;
+            console.log(`Attestation completed in ${totalTime} seconds`);
+            return { message, attestation };
+          }
+        }
+
+        console.log(`Attempt ${attempt}/${maxAttempts}: Waiting 10 seconds...`);
+        await sleep(10000);
+        attempt++;
+      } catch (error) {
+        console.error(`Attempt ${attempt}/${maxAttempts} failed:`, error.response?.data || error.message);
+        if (attempt === maxAttempts) throw error;
+        await sleep(10000);
+        attempt++;
       }
-
-      const { message, attestation, status } = response.data.messages[0];
-      console.log('Message Status:', status);
-      
-      if (status !== 'complete') {
-        throw new Error(`Attestation status is ${status}`);
-      }
-
-      return { message, attestation };
-    } catch (error) {
-      console.error('Attestation Error:', error.response?.data || error.message);
-      throw error;
     }
+
+    throw new Error('Attestation polling timed out after 5 minutes');
   }
 }
 
