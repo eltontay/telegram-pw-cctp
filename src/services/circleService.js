@@ -6,14 +6,14 @@ const {
 const {
   SmartContractPlatformSDK,
 } = require("@circle-fin/smart-contract-platform");
-const config = require("../config");
+const config = require("../config/index.js");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
 
 class CircleService {
   constructor(bot) {
     try {
-      if (!this.config?.circle?.apiKey || !this.config?.circle?.entitySecret) {
+      if (!config?.circle?.apiKey || !config?.circle?.entitySecret) {
         throw new Error("Circle API key or entity secret is missing");
       }
       this.walletSDK = null;
@@ -26,10 +26,10 @@ class CircleService {
 
   async init() {
     try {
-      if (!this.walletSDK && this.config && this.config.circle) {
+      if (!this.walletSDK && config.circle) {
         this.walletSDK = await initiateDeveloperControlledWalletsClient({
-          apiKey: this.config.circle.apiKey,
-          entitySecret: this.config.circle.entitySecret,
+          apiKey: config.circle.apiKey,
+          entitySecret: config.circle.entitySecret,
         });
       }
       if (!this.walletSDK) {
@@ -75,7 +75,7 @@ class CircleService {
         `https://api.circle.com/v1/w3s/wallets/${walletId}/balances`,
         {
           headers: {
-            Authorization: `Bearer ${this.config.circle.apiKey}`,
+            Authorization: `Bearer ${config.circle.apiKey}`,
           },
         },
       );
@@ -128,7 +128,7 @@ class CircleService {
         `https://api.circle.com/v1/w3s/wallets?address=${address}`,
         {
           headers: {
-            Authorization: `Bearer ${this.config.circle.apiKey}`,
+            Authorization: `Bearer ${config.circle.apiKey}`,
           },
         },
       );
@@ -148,7 +148,7 @@ class CircleService {
     chatId,
   ) {
     try {
-      if (!this.config || !this.config.circle) {
+      if (!config || !config.circle) {
         throw new Error("Circle configuration is not properly initialized");
       }
 
@@ -284,7 +284,7 @@ class CircleService {
           `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`,
           {
             headers: {
-              Authorization: `Bearer ${this.config.circle.apiKey}`,
+              Authorization: `Bearer ${config.circle.apiKey}`,
             },
           },
         );
