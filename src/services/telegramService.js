@@ -183,6 +183,7 @@ module.exports = new TelegramService();
   async handleCCTP(msg, match) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    const networkService = require('./networkService');
 
     try {
       const wallet = storageService.getWallet(userId);
@@ -203,12 +204,18 @@ module.exports = new TelegramService();
       const [destinationNetwork, destinationAddress, amount] = params;
       const sourceNetwork = networkService.getCurrentNetwork().name;
 
+      // Validate networks
+      if (!networkService.isValidNetwork(destinationNetwork)) {
+        await this.bot.sendMessage(chatId, "Invalid destination network. Use /networks to see available networks.");
+        return;
+      }
+
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
       
       const result = await circleService.crossChainTransfer(
         wallet.walletId,
         sourceNetwork,
-        destinationNetwork,
+        destinationNetwork.toUpperCase(),
         destinationAddress,
         amount
       );
