@@ -256,6 +256,14 @@ class TelegramService {
         return;
       }
 
+      if (currentNetwork.name === destinationNetworkUpper) {
+        await this.bot.sendMessage(
+          chatId,
+          `Source network (${currentNetwork.name}) cannot be the same as destination network.`,
+        );
+        return;
+      }
+
       if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
