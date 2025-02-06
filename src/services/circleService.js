@@ -132,16 +132,15 @@ class CircleService {
     try {
       await this.init();
 
-      if (
-        !CCTP.contracts[sourceNetwork] ||
-        !CCTP.contracts[destinationNetwork]
-      ) {
-        throw new Error("Invalid network configuration");
+      const networks = networkService.getAllNetworks();
+      const sourceNetworkConfig = networks[sourceNetwork];
+      
+      if (!sourceNetworkConfig || !CCTP.contracts[sourceNetwork]) {
+        throw new Error("Invalid source network configuration");
       }
 
-      const sourceNetworkConfig = networkService.getAllNetworks()[sourceNetwork];
-      if (!sourceNetworkConfig) {
-        throw new Error("Invalid source network");
+      if (!CCTP.contracts[destinationNetwork]) {
+        throw new Error("Invalid destination network configuration");
       }
 
       // 1. Approve USDC transfer
