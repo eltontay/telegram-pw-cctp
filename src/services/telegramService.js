@@ -310,6 +310,7 @@ class TelegramService {
         destinationNetwork.toUpperCase(),
         destinationAddress,
         amount,
+        chatId,
       );
 
       const message =
