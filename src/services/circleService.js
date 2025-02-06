@@ -20,13 +20,21 @@ class CircleService {
   }
 
   async init() {
-    if (!this.walletSDK && this.config && this.config.circle) {
-      this.walletSDK = await initiateDeveloperControlledWalletsClient({
-        apiKey: this.config.circle.apiKey,
-        entitySecret: this.config.circle.entitySecret,
-      });
+    try {
+      if (!this.walletSDK && this.config && this.config.circle) {
+        this.walletSDK = await initiateDeveloperControlledWalletsClient({
+          apiKey: this.config.circle.apiKey,
+          entitySecret: this.config.circle.entitySecret,
+        });
+      }
+      if (!this.walletSDK) {
+        throw new Error("Failed to initialize Circle SDK");
+      }
+      return this.walletSDK;
+    } catch (error) {
+      console.error("Error initializing Circle SDK:", error);
+      throw error;
     }
-    return this.walletSDK;
   }
 
   async createWallet(userId) {
@@ -88,6 +96,7 @@ class CircleService {
 
   async sendTransaction(walletId, destinationAddress, amount) {
     try {
+      await this.init();
       const network = networkService.getCurrentNetwork();
       const response = await this.walletSDK.createTransaction({
         walletId: walletId,
