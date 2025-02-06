@@ -206,9 +206,16 @@ class CircleService {
           },
         },
       });
+      console.log('Approve Transaction Response:', approveTx);
+      
+      const transactionId = approveTx?.data?.transaction?.id || approveTx?.data?.id;
+      if (!transactionId) {
+        throw new Error('Failed to get transaction ID from response');
+      }
+      
       await this.bot.sendMessage(
         chatId,
-        `✅ Approval transaction submitted: ${approveTx.data.transaction.id}`,
+        `✅ Approval transaction submitted: ${transactionId}`,
       );
 
       // 2. Wait for approval
