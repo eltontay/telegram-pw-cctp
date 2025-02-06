@@ -2,6 +2,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const config = require("../config/index.js");
 const circleService = require("./circleService");
 const storageService = require("./storageService");
+const networkService = require("./networkService");
 
 class TelegramService {
   constructor() {
@@ -199,8 +200,6 @@ class TelegramService {
   async handleCCTP(msg, match) {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-    const networkService = require("./networkService");
-    const storageService = require("./storageService");
 
     try {
       const wallet = storageService.getWallet(userId);
