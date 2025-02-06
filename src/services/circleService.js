@@ -11,7 +11,7 @@ const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
 
 class CircleService {
-  constructor(bot) {
+  constructor(bot = null) {
     try {
       if (!config?.circle?.apiKey || !config?.circle?.entitySecret) {
         throw new Error("Circle API key or entity secret is missing");
