@@ -11,12 +11,13 @@ const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
 
 class CircleService {
-  constructor() {
+  constructor(bot) {
     if (!config || !config.circle) {
       throw new Error("Circle configuration is missing");
     }
     this.config = config;
     this.walletSDK = null;
+    this.bot = bot;
   }
 
   async init() {

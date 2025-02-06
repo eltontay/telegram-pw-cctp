@@ -1,6 +1,7 @@
 const TelegramBot = require("node-telegram-bot-api");
 const config = require("../config/index.js");
-const circleService = require("./circleService");
+const CircleService = require("./circleService");
+const circleService = new CircleService(new TelegramBot(config.telegram.botToken, { polling: true }));
 const storageService = require("./storageService");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
