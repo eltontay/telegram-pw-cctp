@@ -142,33 +142,41 @@ class TelegramService {
   async handleAddress(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    const currentNetwork = networkService.getCurrentNetwork().name;
 
-    const wallet = storageService.getWallet(userId);
-    if (!wallet) {
+    const wallets = storageService.getWallet(userId);
+    if (!wallets || !wallets[currentNetwork]) {
       await this.bot.sendMessage(
         chatId,
-        "Create a wallet first with /createWallet",
+        `No wallet found for ${currentNetwork}. Create one with /createWallet`,
       );
       return;
     }
 
-    await this.bot.sendMessage(chatId, `Wallet address: ${wallet.address}`);
+    await this.bot.sendMessage(
+      chatId,
+      `Wallet address on ${currentNetwork}: ${wallets[currentNetwork].address}`,
+    );
   }
 
   async handleWalletId(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    const currentNetwork = networkService.getCurrentNetwork().name;
 
-    const wallet = storageService.getWallet(userId);
-    if (!wallet) {
+    const wallets = storageService.getWallet(userId);
+    if (!wallets || !wallets[currentNetwork]) {
       await this.bot.sendMessage(
         chatId,
-        "Create a wallet first with /createWallet",
+        `No wallet found for ${currentNetwork}. Create one with /createWallet`,
       );
       return;
     }
 
-    await this.bot.sendMessage(chatId, `Wallet ID: ${wallet.walletId}`);
+    await this.bot.sendMessage(
+      chatId,
+      `Wallet ID on ${currentNetwork}: ${wallets[currentNetwork].walletId}`,
+    );
   }
 
   async handleSend(msg, match) {
