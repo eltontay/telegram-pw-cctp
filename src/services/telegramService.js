@@ -14,7 +14,7 @@ class TelegramService {
       this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
       this.circleService = new CircleService(this.bot);
       this.setupCommands();
-      this.initializeCircleSDK().catch(error => {
+      this.initializeCircleSDK().catch((error) => {
         console.error("Failed to initialize Circle SDK:", error);
       });
     } catch (error) {
@@ -143,6 +143,7 @@ class TelegramService {
     const userId = msg.from.id;
     const currentNetwork = networkService.getCurrentNetwork().name;
 
+    console.log(currentNetwork);
     try {
       const wallets = storageService.getWallet(userId);
       if (!wallets || !wallets[currentNetwork]) {
@@ -319,7 +320,7 @@ class TelegramService {
       if (!userWallet) {
         await this.bot.sendMessage(
           chatId,
-          `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`
+          `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`,
         );
         return;
       }
