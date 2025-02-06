@@ -148,9 +148,10 @@ class CircleService {
       }
       
       // 1. Approve USDC transfer
+      const network = networkService.getCurrentNetwork();
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
-        tokenId: config.network.usdcTokenId,
+        tokenId: network.usdcTokenId,
         type: 'approve',
         destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
         amounts: [amount]
