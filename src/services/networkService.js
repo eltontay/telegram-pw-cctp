@@ -21,6 +21,10 @@ class NetworkService {
   getAllNetworks() {
     return networks;
   }
+
+  isValidNetwork(networkName) {
+    return networks.hasOwnProperty(networkName.toUpperCase());
+  }
 }
 
 module.exports = new NetworkService();
