@@ -184,23 +184,28 @@ class TelegramService {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
     try {
-      const walletInfo = storageService.getWallet(userId);
-      if (!walletInfo) {
-        throw new Error("No wallet found. Please create a wallet first.");
+      const currentNetwork = networkService.getCurrentNetwork().name;
+      const wallets = storageService.getWallet(userId);
+      if (!wallets || !wallets[currentNetwork]) {
+        throw new Error(`No wallet found for ${currentNetwork}. Please create a wallet first using /createWallet`);
       }
+
       const params = match[1].split(" ");
       if (params.length !== 2) {
         throw new Error("Invalid format. Use: /send <address> <amount>");
       }
+
       const [destinationAddress, amount] = params;
-      await this.bot.sendMessage(chatId, "Processing transaction...");
+      await this.bot.sendMessage(chatId, `Processing transaction on ${currentNetwork}...`);
+      
       const txResponse = await circleService.sendTransaction(
-        walletInfo.walletId,
+        wallets[currentNetwork].walletId,
         destinationAddress,
         amount,
       );
+
       const message =
-        `✅ Transaction submitted!\n\n` +
+        `✅ Transaction submitted on ${currentNetwork}!\n\n` +
         `Amount: ${amount} USDC\n` +
         `To: ${destinationAddress}\n` +
         `Transaction ID: ${txResponse.id}`;
