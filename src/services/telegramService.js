@@ -246,16 +246,12 @@ class TelegramService {
 
       const [destinationNetwork, destinationAddress, amount] = params;
       const currentNetwork = networkService.getCurrentNetwork();
-      const sourceNetwork = currentNetwork.name;
-
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
-      const sourceNetworkUpper = sourceNetwork;
 
-
-      if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
+      if (!CCTP.domains[currentNetwork.name] || !CCTP.contracts[currentNetwork.name]) {
         await this.bot.sendMessage(
           chatId,
-          `Invalid source network: ${sourceNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
+          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
         );
         return;
       }
@@ -268,11 +264,11 @@ class TelegramService {
         return;
       }
 
-      const userWallet = wallet[sourceNetworkUpper];
+      const userWallet = wallet[currentNetwork.name];
       if (!userWallet) {
         await this.bot.sendMessage(
           chatId,
-          `No wallet found for ${sourceNetwork}. Create one first with /createWallet`,
+          `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`,
         );
         return;
       }
@@ -281,7 +277,7 @@ class TelegramService {
 
       const result = await circleService.crossChainTransfer(
         userWallet.walletId,
-        sourceNetwork,
+        currentNetwork.name,
         destinationNetwork.toUpperCase(),
         destinationAddress,
         amount,
@@ -289,7 +285,7 @@ class TelegramService {
 
       const message =
         `✅ Cross-chain transfer initiated!\n\n` +
-        `From: ${sourceNetwork}\n` +
+        `From: ${currentNetwork.name}\n` +
         `To: ${destinationNetwork}\n` +
         `Amount: ${amount} USDC\n` +
         `Recipient: ${destinationAddress}\n\n` +
