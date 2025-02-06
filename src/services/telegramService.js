@@ -10,6 +10,15 @@ class TelegramService {
     this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
     this.circleService = new CircleService(this.bot);
     this.setupCommands();
+    this.initializeCircleSDK();
+  }
+
+  async initializeCircleSDK() {
+    try {
+      await this.circleService.init();
+    } catch (error) {
+      console.error("Error initializing Circle SDK:", error);
+    }
   }
 
   setupCommands() {
