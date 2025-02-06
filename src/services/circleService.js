@@ -31,6 +31,13 @@ class CircleService {
     });
   }
 
+  async init() {
+    this.walletSDK = await initiateDeveloperControlledWalletsClient({
+      apiKey: config.circle.apiKey,
+      entitySecret: config.circle.entitySecret,
+    });
+  }
+
   async createWallet(userId) {
     try {
       const walletSetResponse = await this.walletSDK.createWalletSet({
@@ -122,6 +129,7 @@ class CircleService {
 
   async crossChainTransfer(walletId, sourceNetwork, destinationNetwork, destinationAddress, amount) {
     try {
+      await this.init();
       const CCTP = require('../config/cctp');
       const networkService = require('./networkService');
       
