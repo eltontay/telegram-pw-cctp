@@ -18,11 +18,12 @@ class TelegramService {
     this.bot.onText(/\/walletId/, this.handleWalletId.bind(this));
     this.bot.onText(/\/network (.+)/, this.handleNetwork.bind(this));
     this.bot.onText(/\/networks/, this.handleListNetworks.bind(this));
+    this.bot.onText(/\/cctp (.+)/, this.handleCCTP.bind(this));
   }
 
   async handleStart(msg) {
     const chatId = msg.chat.id;
-    const message = `Welcome to Circle Wallet Bot!\n\nCommands:\n/createWallet - Create a wallet\n/address - Get wallet address\n/walletId - Get wallet ID\n/balance - Check USDC balance\n/send <address> <amount> - Send USDC\n/network <network> - Switch network\n/networks - List available networks`;
+    const message = `Welcome to Circle Wallet Bot!\n\nCommands:\n/createWallet - Create a wallet\n/address - Get wallet address\n/walletId - Get wallet ID\n/balance - Check USDC balance\n/send <address> <amount> - Send USDC\n/network <network> - Switch network\n/networks - List available networks\n/cctp <destination-network> <address> <amount> - Cross-chain transfer`;
     await this.bot.sendMessage(chatId, message);
   }
 
@@ -177,3 +178,58 @@ class TelegramService {
 }
 
 module.exports = new TelegramService();
+
+
+  async handleCCTP(msg, match) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    try {
+      const wallet = storageService.getWallet(userId);
+      if (!wallet) {
+        await this.bot.sendMessage(chatId, "Create a wallet first with /createWallet");
+        return;
+      }
+
+      const params = match[1].split(" ");
+      if (params.length !== 3) {
+        await this.bot.sendMessage(
+          chatId,
+          "Invalid format. Use: /cctp <destination-network> <address> <amount>"
+        );
+        return;
+      }
+
+      const [destinationNetwork, destinationAddress, amount] = params;
+      const sourceNetwork = networkService.getCurrentNetwork().name;
+
+      await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
+      
+      const result = await circleService.crossChainTransfer(
+        wallet.walletId,
+        sourceNetwork,
+        destinationNetwork,
+        destinationAddress,
+        amount
+      );
+
+      const message = 
+        `✅ Cross-chain transfer initiated!\n\n` +
+        `From: ${sourceNetwork}\n` +
+        `To: ${destinationNetwork}\n` +
+        `Amount: ${amount} USDC\n` +
+        `Recipient: ${destinationAddress}\n\n` +
+        `Transactions:\n` +
+        `Approve: ${result.approveTx}\n` +
+        `Burn: ${result.burnTx}\n` +
+        `Receive: ${result.receiveTx}`;
+
+      await this.bot.sendMessage(chatId, message);
+    } catch (error) {
+      console.error("Error in CCTP transfer:", error);
+      await this.bot.sendMessage(
+        chatId,
+        `❌ Error: ${error.message || "Failed to execute cross-chain transfer"}`
+      );
+    }
+  }

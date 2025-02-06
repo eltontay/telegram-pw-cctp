@@ -118,6 +118,98 @@ class CircleService {
       throw error;
     }
   }
+
+  async crossChainTransfer(walletId, sourceNetwork, destinationNetwork, destinationAddress, amount) {
+    try {
+      const CCTP = require('../config/cctp');
+      
+      // 1. Approve USDC transfer
+      const approveTx = await this.walletSDK.createTransaction({
+        walletId: walletId,
+        tokenId: config.network.usdcTokenId,
+        type: 'approve',
+        destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
+        amounts: [amount]
+      });
+      
+      // 2. Wait for approval
+      await this.walletSDK.waitForTransaction(approveTx.data.transaction.id);
+
+      // 3. Create burn transaction
+      const destinationDomain = CCTP.domains[destinationNetwork];
+      const burnTx = await this.walletSDK.createTransaction({
+        walletId: walletId,
+        type: 'contract_call',
+        destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
+        contractAbi: ['function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint256 minFinalityThreshold)'],
+        functionName: 'depositForBurn',
+        functionArgs: [
+          amount,
+          destinationDomain,
+          `0x${destinationAddress.padStart(64, '0')}`,
+          config.network.usdcAddress,
+          '0x' + '0'.repeat(64),
+          '0',
+          '1000'
+        ]
+      });
+
+      // 4. Wait for burn transaction
+      const burnReceipt = await this.walletSDK.waitForTransaction(burnTx.data.transaction.id);
+
+      // 5. Get attestation
+      const attestation = await this.waitForAttestation(
+        CCTP.domains[sourceNetwork],
+        burnReceipt.transactionHash
+      );
+
+      // 6. Receive on destination chain
+      const receiveTx = await this.walletSDK.createTransaction({
+        walletId: walletId,
+        type: 'contract_call',
+        destinationAddress: CCTP.contracts[destinationNetwork].messageTransmitter,
+        contractAbi: ['function receiveMessage(bytes message, bytes attestation)'],
+        functionName: 'receiveMessage',
+        functionArgs: [attestation.message, attestation.attestation]
+      });
+
+      return {
+        approveTx: approveTx.data.transaction.id,
+        burnTx: burnTx.data.transaction.id,
+        receiveTx: receiveTx.data.transaction.id
+      };
+    } catch (error) {
+      console.error("Error in cross-chain transfer:", error);
+      throw error;
+    }
+  }
+
+  async waitForAttestation(srcDomainId, transactionHash) {
+    try {
+      while (true) {
+        const response = await axios.get(
+          `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`,
+          {
+            headers: {
+              Authorization: `Bearer ${config.circle.apiKey}`,
+            },
+          }
+        );
+        
+        if (response.data?.messages?.length > 0 && response.data.messages[0].status === "complete") {
+          return {
+            message: response.data.messages[0].message,
+            attestation: response.data.messages[0].attestation
+          };
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } catch (error) {
+      console.error("Error getting attestation:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new CircleService();
