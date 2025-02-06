@@ -218,15 +218,7 @@ class CircleService {
         `✅ Approval transaction submitted: ${transactionId}`,
       );
 
-      // 2. Wait for approval
-      await this.bot.sendMessage(
-        chatId,
-        "Step 2/4: Waiting for approval confirmation...",
-      );
-      await this.walletSDK.waitForTransaction(transactionId);
-      await this.bot.sendMessage(chatId, "✅ Approval confirmed!");
-
-      // 3. Create burn transaction
+      // Create burn transaction
       await this.bot.sendMessage(chatId, "Step 3/4: Initiating USDC burn...");
       const destinationDomain = CCTP.domains[destinationNetwork];
       const burnTx = await this.walletSDK.createTransaction({
