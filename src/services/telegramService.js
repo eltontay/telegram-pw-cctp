@@ -199,6 +199,7 @@ class TelegramService {
   async handleCCTP(msg, match) {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
+    const networkService = require("./networkService");
     const storageService = require("./storageService");
 
     try {
