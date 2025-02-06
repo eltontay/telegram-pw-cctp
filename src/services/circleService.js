@@ -6,14 +6,13 @@ const {
 const {
   SmartContractPlatformSDK,
 } = require("@circle-fin/smart-contract-platform");
-const config = require("../config/index.js");
+const config = require("../config");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
 
 class CircleService {
   constructor(bot) {
     try {
-      this.config = require("../config/index.js");
       if (!this.config?.circle?.apiKey || !this.config?.circle?.entitySecret) {
         throw new Error("Circle API key or entity secret is missing");
       }
