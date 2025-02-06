@@ -152,14 +152,15 @@ class CircleService {
       }
 
       const networks = networkService.getAllNetworks();
-      const sourceNetworkConfig = networks[sourceNetwork];
+      const currentNetwork = networkService.getCurrentNetwork();
+      const sourceNetworkConfig = networks[currentNetwork.name];
       
-      if (!sourceNetworkConfig || !CCTP.contracts[sourceNetwork]) {
-        throw new Error("Invalid source network configuration");
+      if (!sourceNetworkConfig || !CCTP.contracts[currentNetwork.name]) {
+        throw new Error(`Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`);
       }
 
       if (!CCTP.contracts[destinationNetwork]) {
-        throw new Error("Invalid destination network configuration");
+        throw new Error(`Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`);
       }
 
       // 1. Approve USDC transfer
