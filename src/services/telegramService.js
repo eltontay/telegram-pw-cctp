@@ -54,20 +54,27 @@ class TelegramService {
   async handleCreateWallet(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    const networkService = require('./networkService');
+    const currentNetwork = networkService.getCurrentNetwork();
 
     try {
-      const wallet = storageService.getWallet(userId);
-      if (wallet) {
-        await this.bot.sendMessage(chatId, "You already have a wallet!");
+      const userWallets = storageService.getWallet(userId) || {};
+      if (userWallets[currentNetwork.name]) {
+        await this.bot.sendMessage(chatId, `You already have a wallet on ${currentNetwork.name}! Use /network to switch networks if you want to create a wallet on another network.`);
         return;
       }
 
-      const { walletId, walletData } = await circleService.createWallet(userId);
-      const address = walletData.data.wallets[0].address;
-      storageService.saveWallet(userId, { walletId, address });
+      const networkName = currentNetwork.name;
+      const { wallets } = await circleService.createWallet(userId, [networkName]);
+      const walletInfo = wallets[networkName];
+      
+      const existingWallets = storageService.getWallet(userId) || {};
+      existingWallets[networkName] = walletInfo;
+      storageService.saveWallet(userId, existingWallets);
+      
       await this.bot.sendMessage(
         chatId,
-        `Wallet created!\nAddress: ${address}`,
+        `Wallet created on ${networkName}!\nAddress: ${walletInfo.address}`,
       );
     } catch (error) {
       await this.bot.sendMessage(
