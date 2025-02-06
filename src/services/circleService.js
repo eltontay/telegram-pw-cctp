@@ -161,6 +161,7 @@ class CircleService {
 
       // 3. Create burn transaction
       const destinationDomain = CCTP.domains[destinationNetwork];
+      const network = networkService.getCurrentNetwork();
       const burnTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         type: 'contract_call',
@@ -171,7 +172,7 @@ class CircleService {
           amount,
           destinationDomain,
           `0x${destinationAddress.padStart(64, '0')}`,
-          config.network.usdcAddress,
+          network.usdcAddress,
           '0x' + '0'.repeat(64),
           '0',
           '1000'
