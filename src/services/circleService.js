@@ -3,15 +3,12 @@ const { v4: uuidv4 } = require("uuid");
 const {
   initiateDeveloperControlledWalletsClient,
 } = require("@circle-fin/developer-controlled-wallets");
-const {
-  SmartContractPlatformSDK,
-} = require("@circle-fin/smart-contract-platform");
 const config = require("../config/index.js");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
 
 class CircleService {
-  constructor(bot = null) {
+  constructor(bot) {
     try {
       if (!config?.circle?.apiKey || !config?.circle?.entitySecret) {
         throw new Error("Circle API key or entity secret is missing");
