@@ -295,6 +295,15 @@ class TelegramService {
 
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
 
+      const userWallet = wallet[currentNetwork.name];
+      if (!userWallet) {
+        await this.bot.sendMessage(
+          chatId,
+          `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`
+        );
+        return;
+      }
+
       const result = await circleService.crossChainTransfer(
         userWallet.walletId,
         currentNetwork.name,
