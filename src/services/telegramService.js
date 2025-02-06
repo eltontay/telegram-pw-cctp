@@ -249,10 +249,29 @@ class TelegramService {
 
       // Validate networks
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
-      if (!CCTP.domains[destinationNetworkUpper]) {
+      const sourceNetworkUpper = sourceNetwork.toUpperCase();
+      
+      if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
           "Invalid destination network. Supported networks for CCTP: " + Object.keys(CCTP.domains).join(", "),
+        );
+        return;
+      }
+
+      if (!CCTP.domains[sourceNetworkUpper] || !CCTP.contracts[sourceNetworkUpper]) {
+        await this.bot.sendMessage(
+          chatId,
+          `Invalid source network: ${sourceNetwork}. Please switch to a supported network first.`,
+        );
+        return;
+      }
+
+      const wallet = wallet[sourceNetworkUpper];
+      if (!wallet) {
+        await this.bot.sendMessage(
+          chatId,
+          `No wallet found for ${sourceNetwork}. Create one first with /createWallet`,
         );
         return;
       }
