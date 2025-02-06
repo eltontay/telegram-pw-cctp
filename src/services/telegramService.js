@@ -143,7 +143,6 @@ class TelegramService {
     const userId = msg.from.id;
     const currentNetwork = networkService.getCurrentNetwork().name;
 
-    console.log(currentNetwork);
     try {
       const wallets = storageService.getWallet(userId);
       if (!wallets || !wallets[currentNetwork]) {
@@ -154,7 +153,7 @@ class TelegramService {
         return;
       }
 
-      const balance = await circleService.getWalletBalance(
+      const balance = await this.circleService.getWalletBalance(
         wallets[currentNetwork].walletId,
       );
       await this.bot.sendMessage(
@@ -162,6 +161,7 @@ class TelegramService {
         `USDC Balance on ${balance.network}: ${balance.usdc} USDC`,
       );
     } catch (error) {
+      console.error("Error in handleBalance:", error);
       await this.bot.sendMessage(
         chatId,
         "Error getting balance. Try again later.",
