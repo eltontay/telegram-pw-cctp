@@ -47,10 +47,12 @@ class CircleService {
       const networkService = require('./networkService');
       const currentNetwork = networkService.getCurrentNetwork();
       
+      const accountType = currentNetwork.name.startsWith('AVAX') ? 'EOA' : 'SCA';
+      
       const walletData = await this.walletSDK.createWallets({
         idempotencyKey: uuidv4(),
         blockchains: [currentNetwork.name],
-        accountType: "SCA",
+        accountType: accountType,
         walletSetId: walletSetResponse.data?.walletSet?.id ?? "",
       });
       const walletId = walletData.data.wallets[0].id;
