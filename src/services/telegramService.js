@@ -247,10 +247,11 @@ class TelegramService {
       const sourceNetwork = networkService.getCurrentNetwork().name;
 
       // Validate networks
-      if (!networkService.isValidNetwork(destinationNetwork)) {
+      const destinationNetworkUpper = destinationNetwork.toUpperCase();
+      if (!CCTP.domains[destinationNetworkUpper]) {
         await this.bot.sendMessage(
           chatId,
-          "Invalid destination network. Use /networks to see available networks.",
+          "Invalid destination network. Supported networks for CCTP: " + Object.keys(CCTP.domains).join(", "),
         );
         return;
       }
