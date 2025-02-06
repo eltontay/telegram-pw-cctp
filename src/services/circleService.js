@@ -317,11 +317,11 @@ class CircleService {
           timeout: 10000 // 10s timeout for each request
         });
 
-        const messageStatus = response.data?.messages?.[0]?.status;
+        const messageStatus = response.data?.data?.messages?.[0]?.status;
         console.log(`Attempt ${attempt}/${maxAttempts}: Status:`, messageStatus || 'pending');
         
-        if (response.data?.messages?.[0]) {
-          const { message, attestation, status } = response.data.messages[0];
+        if (response.data?.data?.messages?.[0]) {
+          const { message, attestation, status } = response.data.data.messages[0];
           if (status === 'complete') {
             const totalTime = (Date.now() - startTime) / 1000;
             console.log(`✅ Attestation completed in ${totalTime} seconds`);
