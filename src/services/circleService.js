@@ -40,31 +40,19 @@ class CircleService {
 
   async createWallet(userId) {
     try {
-      const networkService = require('./networkService');
-      const currentNetwork = networkService.getCurrentNetwork();
-
-      // Create wallet set first
       const walletSetResponse = await this.walletSDK.createWalletSet({
-        idempotencyKey: uuidv4(),
-        name: `WalletSet_${currentNetwork.name}_${userId}`
+        name: "WalletSet 1",
       });
 
-      if (!walletSetResponse?.data?.walletSet?.id) {
-        throw new Error('Failed to create wallet set');
-      }
-
-      // Create wallet with correct network
+      const networkService = require('./networkService');
+      const currentNetwork = networkService.getCurrentNetwork();
+      
       const walletData = await this.walletSDK.createWallets({
         idempotencyKey: uuidv4(),
         blockchains: [currentNetwork.name],
         accountType: "SCA",
-        walletSetId: walletSetResponse.data.walletSet.id
+        walletSetId: walletSetResponse.data?.walletSet?.id ?? "",
       });
-
-      if (!walletData?.data?.wallets?.[0]?.id) {
-        throw new Error('Failed to create wallet');
-      }
-
       const walletId = walletData.data.wallets[0].id;
       return { walletId, walletData };
     } catch (error) {
@@ -147,11 +135,11 @@ class CircleService {
       await this.init();
       const CCTP = require('../config/cctp');
       const networkService = require('./networkService');
-
+      
       if (!CCTP.contracts[sourceNetwork] || !CCTP.contracts[destinationNetwork]) {
         throw new Error('Invalid network configuration');
       }
-
+      
       // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
@@ -160,7 +148,7 @@ class CircleService {
         destinationAddress: CCTP.contracts[sourceNetwork].tokenMessenger,
         amounts: [amount]
       });
-
+      
       // 2. Wait for approval
       await this.walletSDK.waitForTransaction(approveTx.data.transaction.id);
 
@@ -224,14 +212,14 @@ class CircleService {
             },
           }
         );
-
+        
         if (response.data?.messages?.length > 0 && response.data.messages[0].status === "complete") {
           return {
             message: response.data.messages[0].message,
             attestation: response.data.messages[0].attestation
           };
         }
-
+        
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
