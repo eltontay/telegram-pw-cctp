@@ -153,16 +153,16 @@ class CircleService {
 
       // Validate networks
       const currentNetwork = networkService.getCurrentNetwork();
-      
+
       if (!CCTP.contracts[currentNetwork.name]) {
         throw new Error(
-          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`
+          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
         );
       }
 
       if (!CCTP.contracts[destinationNetwork]) {
         throw new Error(
-          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`
+          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
         );
       }
 
@@ -175,23 +175,28 @@ class CircleService {
         chatId,
         "Step 1/4: Approving USDC transfer...",
       );
-      const networks = require('../../data/networks.json');
+      const networks = require("../../data/networks.json");
       const sourceNetworkConfig = networks[currentNetwork.name];
 
       // Debug logging
-      console.log('Transaction Parameters:');
-      console.log('walletId:', walletId);
-      console.log('sourceNetworkConfig:', sourceNetworkConfig);
-      console.log('tokenId:', sourceNetworkConfig?.usdcTokenId);
-      console.log('currentNetwork:', currentNetwork);
-      console.log('CCTP contracts:', CCTP.contracts);
-      console.log('tokenMessenger address:', CCTP.contracts[currentNetwork.name]?.tokenMessenger);
-      console.log('amount:', amount);
+      console.log("Transaction Parameters:");
+      console.log("walletId:", walletId);
+      console.log("sourceNetworkConfig:", sourceNetworkConfig);
+      console.log("tokenId:", sourceNetworkConfig?.usdcTokenId);
+      console.log("currentNetwork:", currentNetwork);
+      console.log("CCTP contracts:", CCTP.contracts);
+      console.log(
+        "tokenMessenger address:",
+        CCTP.contracts[currentNetwork.name]?.tokenMessenger,
+      );
+      console.log("amount:", amount);
 
-      if (!walletId) throw new Error('walletId is undefined');
-      if (!sourceNetworkConfig?.usdcTokenId) throw new Error('usdcTokenId is undefined');
-      if (!CCTP.contracts[currentNetwork.name]?.tokenMessenger) throw new Error('tokenMessenger address is undefined');
-      if (!amount) throw new Error('amount is undefined');
+      if (!walletId) throw new Error("walletId is undefined");
+      if (!sourceNetworkConfig?.usdcTokenId)
+        throw new Error("usdcTokenId is undefined");
+      if (!CCTP.contracts[currentNetwork.name]?.tokenMessenger)
+        throw new Error("tokenMessenger address is undefined");
+      if (!amount) throw new Error("amount is undefined");
 
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
@@ -206,13 +211,14 @@ class CircleService {
           },
         },
       });
-      console.log('Approve Transaction Response:', approveTx);
-      
-      const transactionId = approveTx?.data?.transaction?.id || approveTx?.data?.id;
+      console.log("Approve Transaction Response:", approveTx);
+
+      const transactionId =
+        approveTx?.data?.transaction?.id || approveTx?.data?.id;
       if (!transactionId) {
-        throw new Error('Failed to get transaction ID from response');
+        throw new Error("Failed to get transaction ID from response");
       }
-      
+
       await this.bot.sendMessage(
         chatId,
         `✅ Approval transaction submitted: ${transactionId}`,
@@ -238,22 +244,16 @@ class CircleService {
         },
       });
 
-      const burnTransactionId = burnTx?.data?.transaction?.id || burnTx?.data?.id;
+      const burnTransactionId =
+        burnTx?.data?.transaction?.id || burnTx?.data?.id;
       if (!burnTransactionId) {
-        throw new Error('Failed to get burn transaction ID from response');
+        throw new Error("Failed to get burn transaction ID from response");
       }
 
       await this.bot.sendMessage(
         chatId,
         `✅ Burn transaction submitted: ${burnTransactionId}`,
       );
-
-      // 4. Wait for burn transaction
-      await this.bot.sendMessage(chatId, "Waiting for burn confirmation...");
-      const burnReceipt = await this.walletSDK.waitForTransaction(
-        burnTransactionId,
-      );
-      await this.bot.sendMessage(chatId, "✅ Burn confirmed!");
 
       // 5. Get attestation
       await this.bot.sendMessage(
@@ -296,7 +296,10 @@ class CircleService {
 
   async waitForAttestation(srcDomainId, transactionHash) {
     const isAttestationComplete = (response) => {
-      return response?.messages?.length > 0 && response.messages[0].status === "complete";
+      return (
+        response?.messages?.length > 0 &&
+        response.messages[0].status === "complete"
+      );
     };
 
     const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
@@ -307,14 +310,14 @@ class CircleService {
             Authorization: `Bearer ${config.circle.apiKey}`,
           },
         });
-        
+
         if (isAttestationComplete(response.data)) {
           const { message, attestation } = response.data.messages[0];
           console.log(`Message attested ${url}`);
           return { message, attestation };
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(`Failed to get attestation: ${error}`);
