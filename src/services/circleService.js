@@ -139,7 +139,10 @@ class CircleService {
         throw new Error("Invalid network configuration");
       }
 
-      const network = networkService.getCurrentNetwork();
+      const sourceNetworkConfig = networkService.getAllNetworks()[sourceNetwork];
+      if (!sourceNetworkConfig) {
+        throw new Error("Invalid source network");
+      }
 
       // 1. Approve USDC transfer
       const approveTx = await this.walletSDK.createTransaction({
@@ -167,7 +170,7 @@ class CircleService {
           amount,
           destinationDomain,
           `0x${destinationAddress.padStart(64, "0")}`,
-          network.usdcAddress,
+          sourceNetworkConfig.usdcAddress,
           "0x" + "0".repeat(64),
           "0",
           "1000",
