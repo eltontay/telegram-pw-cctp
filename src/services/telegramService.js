@@ -92,7 +92,7 @@ class TelegramService {
       }
 
       const balance = await circleService.getWalletBalance(wallet.walletId);
-      await this.bot.sendMessage(chatId, `USDC Balance: ${balance.usdc} USDC`);
+      await this.bot.sendMessage(chatId, `USDC Balance on ${balance.network}: ${balance.usdc} USDC`);
     } catch (error) {
       await this.bot.sendMessage(
         chatId,

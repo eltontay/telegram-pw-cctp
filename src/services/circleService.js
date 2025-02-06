@@ -14,7 +14,7 @@ async function getBalance(walletId, networkName) {
     apiKey: config.circle.apiKey,
     entitySecret: config.circle.entitySecret,
   });
-  
+
   return await client.getTokenBalance({
     walletId,
     tokenId: network.usdcTokenId,
@@ -50,8 +50,11 @@ class CircleService {
     }
   }
 
-  async getWalletBalance(walletId) {
+  async getWalletBalance(walletId, networkName) {
     try {
+      const networkService = require('./networkService');
+      const network = networkService.getCurrentNetwork();
+
       const response = await axios.get(
         `https://api.circle.com/v1/w3s/wallets/${walletId}/balances`,
         {
@@ -63,16 +66,17 @@ class CircleService {
 
       const balances = response.data.data.tokenBalances;
 
-      // Filter and format balances
+      // Filter and format balances for the specific network
       const usdcBalance =
-        balances.find((b) => b.token.id === config.network.usdcTokenId)
+        balances.find((b) => b.token.id === network.usdcTokenId)
           ?.amount || "0";
 
       return {
         usdc: usdcBalance,
+        network: network.name
       };
     } catch (error) {
-      console.error("Error getting wallet balance:", error); // Log the error for debugging
+      console.error("Error getting wallet balance:", error);
       throw error;
     }
   }
