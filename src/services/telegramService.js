@@ -32,41 +32,58 @@ class TelegramService {
     const networkName = match[1].toUpperCase();
 
     try {
-      const networkService = require('./networkService');
+      const networkService = require("./networkService");
       const network = networkService.setNetwork(networkName);
-      await this.bot.sendMessage(chatId, `Switched to network: ${network.name} ${network.isTestnet ? '(Testnet)' : ''}\nUSDC Address: ${network.usdcAddress}`);
+      await this.bot.sendMessage(
+        chatId,
+        `Switched to network: ${network.name} ${network.isTestnet ? "(Testnet)" : ""}\nUSDC Address: ${network.usdcAddress}`,
+      );
     } catch (error) {
-      await this.bot.sendMessage(chatId, `Error: Invalid network. Use /networks to see available networks.`);
+      await this.bot.sendMessage(
+        chatId,
+        `Error: Invalid network. Use /networks to see available networks.`,
+      );
     }
   }
 
   async handleListNetworks(msg) {
     const chatId = msg.chat.id;
-    const networkService = require('./networkService');
+    const networkService = require("./networkService");
     const networks = networkService.getAllNetworks();
 
     const networksMessage = Object.entries(networks)
-      .map(([key, network]) => `${network.name} ${network.isTestnet ? '(Testnet)' : ''}`)
-      .join('\n');
+      .map(
+        ([key, network]) =>
+          `${network.name} ${network.isTestnet ? "(Testnet)" : ""}`,
+      )
+      .join("\n");
 
-    await this.bot.sendMessage(chatId, `Available networks:\n${networksMessage}\n\nUse /network <name> to switch networks`);
+    await this.bot.sendMessage(
+      chatId,
+      `Available networks:\n${networksMessage}\n\nUse /network <name> to switch networks`,
+    );
   }
 
   async handleCreateWallet(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
-    const networkService = require('./networkService');
+    const networkService = require("./networkService");
     const currentNetwork = networkService.getCurrentNetwork();
 
     try {
       const userWallets = storageService.getWallet(userId) || {};
       if (userWallets[currentNetwork.name]) {
-        await this.bot.sendMessage(chatId, `You already have a wallet on ${currentNetwork.name}! Use /network to switch networks if you want to create a wallet on another network.`);
+        await this.bot.sendMessage(
+          chatId,
+          `You already have a wallet on ${currentNetwork.name}! Use /network to switch networks if you want to create a wallet on another network.`,
+        );
         return;
       }
 
       const networkName = currentNetwork.name;
-      const { wallets } = await circleService.createWallet(userId, [networkName]);
+      const { wallets } = await circleService.createWallet(userId, [
+        networkName,
+      ]);
       const walletInfo = wallets[networkName];
 
       const existingWallets = storageService.getWallet(userId) || {};
@@ -100,7 +117,10 @@ class TelegramService {
       }
 
       const balance = await circleService.getWalletBalance(wallet.walletId);
-      await this.bot.sendMessage(chatId, `USDC Balance on ${balance.network}: ${balance.usdc} USDC`);
+      await this.bot.sendMessage(
+        chatId,
+        `USDC Balance on ${balance.network}: ${balance.usdc} USDC`,
+      );
     } catch (error) {
       await this.bot.sendMessage(
         chatId,
@@ -179,12 +199,15 @@ class TelegramService {
   async handleCCTP(msg, match) {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-    const storageService = require('./storageService');e');
+    const storageService = require("./storageService");
 
     try {
       const wallet = storageService.getWallet(userId);
       if (!wallet) {
-        await this.bot.sendMessage(chatId, "Create a wallet first with /createWallet");
+        await this.bot.sendMessage(
+          chatId,
+          "Create a wallet first with /createWallet",
+        );
         return;
       }
 
@@ -192,7 +215,7 @@ class TelegramService {
       if (params.length !== 3) {
         await this.bot.sendMessage(
           chatId,
-          "Invalid format. Use: /cctp <destination-network> <address> <amount>"
+          "Invalid format. Use: /cctp <destination-network> <address> <amount>",
         );
         return;
       }
@@ -202,7 +225,10 @@ class TelegramService {
 
       // Validate networks
       if (!networkService.isValidNetwork(destinationNetwork)) {
-        await this.bot.sendMessage(chatId, "Invalid destination network. Use /networks to see available networks.");
+        await this.bot.sendMessage(
+          chatId,
+          "Invalid destination network. Use /networks to see available networks.",
+        );
         return;
       }
 
@@ -213,10 +239,10 @@ class TelegramService {
         sourceNetwork,
         destinationNetwork.toUpperCase(),
         destinationAddress,
-        amount
+        amount,
       );
 
-      const message = 
+      const message =
         `✅ Cross-chain transfer initiated!\n\n` +
         `From: ${sourceNetwork}\n` +
         `To: ${destinationNetwork}\n` +
@@ -232,7 +258,7 @@ class TelegramService {
       console.error("Error in CCTP transfer:", error);
       await this.bot.sendMessage(
         chatId,
-        `❌ Error: ${error.message || "Failed to execute cross-chain transfer"}`
+        `❌ Error: ${error.message || "Failed to execute cross-chain transfer"}`,
       );
     }
   }
