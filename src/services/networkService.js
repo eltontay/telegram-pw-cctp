@@ -1,4 +1,5 @@
 const networks = require('../../data/networks.json');
+const CCTP = require('../config/cctp');
 
 class NetworkService {
   constructor() {
@@ -22,7 +23,6 @@ class NetworkService {
   }
 
   isValidNetwork(networkName) {
-    const CCTP = require('../config/cctp');
     return !!CCTP.domains[networkName];
   }
 }
