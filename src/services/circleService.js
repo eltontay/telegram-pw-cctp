@@ -175,26 +175,6 @@ class CircleService {
       const networks = require("../../data/networks.json");
       const sourceNetworkConfig = networks[currentNetwork.name];
 
-      // Debug logging
-      console.log("Transaction Parameters:");
-      console.log("walletId:", walletId);
-      console.log("sourceNetworkConfig:", sourceNetworkConfig);
-      console.log("tokenId:", sourceNetworkConfig?.usdcTokenId);
-      console.log("currentNetwork:", currentNetwork);
-      console.log("CCTP contracts:", CCTP.contracts);
-      console.log(
-        "tokenMessenger address:",
-        CCTP.contracts[currentNetwork.name]?.tokenMessenger,
-      );
-      console.log("amount:", amount);
-
-      if (!walletId) throw new Error("walletId is undefined");
-      if (!sourceNetworkConfig?.usdcTokenId)
-        throw new Error("usdcTokenId is undefined");
-      if (!CCTP.contracts[currentNetwork.name]?.tokenMessenger)
-        throw new Error("tokenMessenger address is undefined");
-      if (!amount) throw new Error("amount is undefined");
-
       const approveTx = await this.walletSDK.createTransaction({
         walletId: walletId,
         tokenId: sourceNetworkConfig.usdcTokenId,
