@@ -281,7 +281,8 @@ class CircleService {
             Authorization: `Bearer ${config.circle.apiKey}`
           }
         });
-        const attestationResponse = response.data;
+        
+        const attestationResponse = response.json();
         if (attestationResponse?.messages?.length > 0 && attestationResponse.messages[0].status === "complete") {
           const { message, attestation } = attestationResponse.messages[0];
           console.log(`Message attested ${url}`);
