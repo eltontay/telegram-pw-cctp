@@ -294,7 +294,6 @@ class TelegramService {
 
       const result = await this.circleService.crossChainTransfer(
         userWallet.walletId,
-        currentNetwork.name,
         destinationNetwork.toUpperCase(),
         destinationAddress,
         amount,
