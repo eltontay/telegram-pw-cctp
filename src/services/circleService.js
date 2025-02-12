@@ -174,10 +174,20 @@ class CircleService {
       // 1. Approve USDC transfer
       await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
       const approveTx = await buildApproveTransaction(sourceClient, walletAddress, sourceConfig, amount);
-      const signedApproveTx = await this.walletSDK.signTransaction({
-        walletId,
-        transaction: JSON.stringify(approveTx),
-      });
+      const signedApproveTx = await axios.post(
+        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        {
+          walletId,
+          blockchain: currentNetwork.name,
+          transaction: approveTx
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${config.circle.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
       await this.bot.sendMessage(chatId, `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`);
 
@@ -193,10 +203,20 @@ class CircleService {
         mintRecipient
       );
       
-      const signedBurnTx = await this.walletSDK.signTransaction({
-        walletId,
-        transaction: JSON.stringify(burnTx),
-      });
+      const signedBurnTx = await axios.post(
+        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        {
+          walletId,
+          blockchain: currentNetwork.name,
+          transaction: burnTx
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${config.circle.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
       await this.bot.sendMessage(chatId, `✅ Burn transaction submitted: ${signedBurnTx.data.transactionId}`);
 
@@ -219,10 +239,20 @@ class CircleService {
         attestation.attestation
       );
       
-      const signedReceiveTx = await this.walletSDK.signTransaction({
-        walletId,
-        transaction: JSON.stringify(receiveTx),
-      });
+      const signedReceiveTx = await axios.post(
+        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        {
+          walletId,
+          blockchain: destinationNetwork,
+          transaction: receiveTx
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${config.circle.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
       return {
         approveTx: signedApproveTx.data.transactionId,
