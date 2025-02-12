@@ -44,9 +44,13 @@ const buildBurnTransaction = async (
     address: walletAddress,
   });
 
-  const gasPrice = await client.getGasPrice();
-  const maxFeePerGas = (gasPrice * 120n) / 100n;
-  const maxPriorityFeePerGas = BigInt(2000000000);
+  const maxPriorityFeePerGas = await client.estimateMaxPriorityFeePerGas();
+  const maxFeePerGas = await client.estimateGas({
+    address: config.tokenMessenger,
+    abi: CCTP.abis.tokenMessenger,
+    functionName: "depositForBurn",
+    args: [amount, destinationDomain, mintRecipient, config.usdc],
+  });
 
   return {
     address: config.tokenMessenger,
@@ -70,9 +74,13 @@ const buildReceiveTransaction = async (
     address: walletAddress,
   });
 
-  const gasPrice = await client.getGasPrice();
-  const maxFeePerGas = (gasPrice * 120n) / 100n;
-  const maxPriorityFeePerGas = BigInt(2000000000);
+  const maxPriorityFeePerGas = await client.estimateMaxPriorityFeePerGas();
+  const maxFeePerGas = await client.estimateGas({
+    address: config.messageTransmitter,
+    abi: CCTP.abis.messageTransmitter,
+    functionName: "receiveMessage",
+    args: [message, attestation],
+  });
 
   return {
     address: config.messageTransmitter,
