@@ -6,6 +6,7 @@ const {
 const config = require("../config/index.js");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
+const { getViemClient, buildApproveTransaction, buildBurnTransaction, buildReceiveTransaction } = require('../utils/viem');
 
 class CircleService {
   constructor(bot) {
@@ -138,14 +139,12 @@ class CircleService {
 
   async crossChainTransfer(
     walletId,
-    sourceNetwork,
     destinationNetwork,
     destinationAddress,
     amount,
     chatId,
   ) {
     try {
-      const { getViemClient, buildApproveTransaction, buildBurnTransaction, buildReceiveTransaction } = require('../utils/viem');
       
       // Initialize SDK first
       await this.init();

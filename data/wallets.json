@@ -1,18 +1,4 @@
+
 {
-  "223218879": {
-    "walletId": "4af5e96f-8c76-51c6-bf83-12c8d0ffa017",
-    "address": "0xa946c86199b5531801574bf4380f6bb665401281",
-    "ARB-SEPOLIA": {
-      "walletId": "be8d7041-ca33-5d67-a103-c870bb8800af",
-      "address": "0xd4d21d62ab87d40959c5e2ba1285fb31e8217c7f"
-    },
-    "ETH-SEPOLIA": {
-      "walletId": "33b794d7-6896-5886-ac6a-a6f987e9feff",
-      "address": "0x4e6b251cd1f3aa6e170eaf1236c23bcc7126173b"
-    },
-    "AVAX-FUJI": {
-      "walletId": "30003645-0670-5d10-8ca2-7e156f122729",
-      "address": "0x7dfe9bfeff77a08716c720ee381338447193ce56"
-    }
-  }
+  "wallets": {}
 }
