@@ -178,7 +178,6 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          blockchain: currentNetwork.name,
           transaction: approveTx
         },
         {
@@ -207,7 +206,6 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          blockchain: currentNetwork.name,
           transaction: burnTx
         },
         {
@@ -243,7 +241,6 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          blockchain: destinationNetwork,
           transaction: receiveTx
         },
         {
