@@ -173,32 +173,29 @@ class CircleService {
         "Step 1/4: Approving USDC transfer...",
       );
 
-      const encodedApproveData = sourceClient.encodeFunctionData({
-        abi: CCTP.abis.usdc,
-        functionName: "approve",
-        args: [sourceConfig.tokenMessenger, amount]
-      });
-
       // Get transaction parameters using viem
-      const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
+      const nonce = await sourceClient.getTransactionCount({
+        address: walletAddress,
+      });
       const estimateGas = await sourceClient.estimateGas({
         account: walletAddress,
         to: sourceConfig.usdc,
-        data: encodedApproveData
+        value: 0n,
       });
       const gasPrice = await sourceClient.getGasPrice();
-      const maxPriorityFeePerGasApprove = await sourceClient.estimateMaxPriorityFeePerGas();
+      const maxPriorityFeePerGasApprove =
+        await sourceClient.estimateMaxPriorityFeePerGas();
       const chainId = await sourceClient.getChainId();
 
       const approveTx = {
         nonce: nonce.toString(),
         to: sourceConfig.usdc,
-        value: "0",
+        value: 0n,
         gas: estimateGas.toString(),
         maxFeePerGas: gasPrice.toString(),
         maxPriorityFeePerGas: maxPriorityFeePerGasApprove.toString(),
         chainId: chainId,
-        data: encodedApproveData
+        data: encodedApproveData,
       };
 
       const signedApproveTx = await axios.post(
@@ -224,7 +221,9 @@ class CircleService {
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
       const maxPriorityFeePerGasBurn =
         await publicClient.estimateMaxPriorityFeePerGas();
-      const burnNonce = await sourceClient.getTransactionCount({ address: walletAddress });
+      const burnNonce = await sourceClient.getTransactionCount({
+        address: walletAddress,
+      });
       const burnEstimateGas = await sourceClient.estimateGas({
         account: walletAddress,
         to: sourceConfig.tokenMessenger,
@@ -238,8 +237,8 @@ class CircleService {
             sourceConfig.usdc,
             maxPriorityFeePerGas.toString(),
             1000,
-          ]
-        })
+          ],
+        }),
       });
 
       const burnTx = {
@@ -260,8 +259,8 @@ class CircleService {
             sourceConfig.usdc,
             maxPriorityFeePerGas.toString(),
             1000,
-          ]
-        })
+          ],
+        }),
       };
 
       const signedBurnTx = await axios.post(
@@ -303,21 +302,24 @@ class CircleService {
       const destinationConfig = CCTP.contracts[destinationNetwork];
 
       const destinationClient = createPublicClient({
-        transport: http(CCTP.rpc[destinationNetwork])
+        transport: http(CCTP.rpc[destinationNetwork]),
       });
-      
-      const receiveNonce = await destinationClient.getTransactionCount({ address: walletAddress });
+
+      const receiveNonce = await destinationClient.getTransactionCount({
+        address: walletAddress,
+      });
       const receiveEstimateGas = await destinationClient.estimateGas({
         account: walletAddress,
         to: destinationConfig.messageTransmitter,
         data: receiveTx.encodeFunctionData({
           abi: CCTP.abis.messageTransmitter,
           functionName: "receiveMessage",
-          args: [attestation.message, attestation.attestation]
-        })
+          args: [attestation.message, attestation.attestation],
+        }),
       });
       const receiveGasPrice = await destinationClient.getGasPrice();
-      const receiveMaxPriorityFeePerGas = await destinationClient.estimateMaxPriorityFeePerGas();
+      const receiveMaxPriorityFeePerGas =
+        await destinationClient.estimateMaxPriorityFeePerGas();
       const receiveChainId = await destinationClient.getChainId();
 
       const receiveTx = {
@@ -331,8 +333,8 @@ class CircleService {
         data: receiveTx.encodeFunctionData({
           abi: CCTP.abis.messageTransmitter,
           functionName: "receiveMessage",
-          args: [attestation.message, attestation.attestation]
-        })
+          args: [attestation.message, attestation.attestation],
+        }),
       };
 
       const signedReceiveTx = await axios.post(
