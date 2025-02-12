@@ -240,7 +240,7 @@ class CircleService {
       const srcDomainId = CCTP.domains[currentNetwork.name];
       const attestation = await this.waitForAttestation(
         srcDomainId,
-        burnTransactionId
+        burnTransactionId,
       );
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
@@ -276,23 +276,28 @@ class CircleService {
     const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
     try {
       while (true) {
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${config.circle.apiKey}`
-          }
-        });
-        
+        // const response = await fetch(url, {
+        //   headers: {
+        //     Authorization: `Bearer ${config.circle.apiKey}`
+        //   }
+        // });
+
+        const response = await fetch(url);
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const attestationResponse = await response.json();
-        if (attestationResponse?.messages?.length > 0 && attestationResponse.messages[0].status === "complete") {
+        if (
+          attestationResponse?.messages?.length > 0 &&
+          attestationResponse.messages[0].status === "complete"
+        ) {
           const { message, attestation } = attestationResponse.messages[0];
           console.log(`Message attested ${url}`);
           return { message, attestation };
         }
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(`Failed to get attestation: ${error}`);
