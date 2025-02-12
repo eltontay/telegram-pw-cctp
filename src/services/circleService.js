@@ -146,21 +146,12 @@ class CircleService {
     chatId,
   ) {
     try {
-      // Initialize SDK first
-      await this.init();
-      
-      // Validate networks
       const currentNetwork = networkService.getCurrentNetwork();
       
-      if (!CCTP.contracts[currentNetwork.name]) {
+      // Validate networks
+      if (!CCTP.contracts[currentNetwork.name] || !CCTP.contracts[destinationNetwork]) {
         throw new Error(
-          `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
-        );
-      }
-
-      if (!CCTP.contracts[destinationNetwork]) {
-        throw new Error(
-          `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
+          `Invalid network. Supported networks: ${Object.keys(CCTP.domains).join(", ")}`
         );
       }
 
@@ -178,7 +169,8 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: approveTx
+          transaction: approveTx,
+          blockchain: currentNetwork.name
         },
         {
           headers: {
@@ -206,7 +198,8 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: burnTx
+          transaction: burnTx,
+          blockchain: currentNetwork.name
         },
         {
           headers: {
@@ -241,7 +234,8 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: receiveTx
+          transaction: receiveTx,
+          blockchain: destinationNetwork
         },
         {
           headers: {
