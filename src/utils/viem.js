@@ -1,6 +1,5 @@
-
-const { createPublicClient, http } = require('viem');
-const CCTP = require('../config/cctp');
+const { createPublicClient, http } = require("viem");
+const CCTP = require("../config/cctp");
 
 const getViemClient = (network) => {
   return createPublicClient({
@@ -8,27 +7,39 @@ const getViemClient = (network) => {
   });
 };
 
-const buildApproveTransaction = async (client, walletAddress, config, amount) => {
-  const nonce = await client.getTransactionCount({
-    address: walletAddress,
-  });
+const buildApproveTransaction = async (
+  client,
+  walletAddress,
+  config,
+  amount,
+) => {
+  // const nonce = await client.getTransactionCount({
+  //   address: walletAddress,
+  // });
 
-  const gasPrice = await client.getGasPrice();
-  const maxFeePerGas = (gasPrice * 120n) / 100n;
-  const maxPriorityFeePerGas = BigInt(2000000000); // 2 gwei
+  // const gasPrice = await client.getGasPrice();
+  // const maxFeePerGas = (gasPrice * 120n) / 100n;
+  // const maxPriorityFeePerGas = BigInt(2000000000); // 2 gwei
 
   return {
     address: config.usdc,
     abi: CCTP.abis.usdc,
     functionName: "approve",
     args: [config.tokenMessenger, amount],
-    nonce,
-    maxFeePerGas,
-    maxPriorityFeePerGas,
+    // nonce,
+    // maxFeePerGas,
+    // maxPriorityFeePerGas,
   };
 };
 
-const buildBurnTransaction = async (client, walletAddress, config, amount, destinationDomain, mintRecipient) => {
+const buildBurnTransaction = async (
+  client,
+  walletAddress,
+  config,
+  amount,
+  destinationDomain,
+  mintRecipient,
+) => {
   const nonce = await client.getTransactionCount({
     address: walletAddress,
   });
@@ -48,7 +59,13 @@ const buildBurnTransaction = async (client, walletAddress, config, amount, desti
   };
 };
 
-const buildReceiveTransaction = async (client, walletAddress, config, message, attestation) => {
+const buildReceiveTransaction = async (
+  client,
+  walletAddress,
+  config,
+  message,
+  attestation,
+) => {
   const nonce = await client.getTransactionCount({
     address: walletAddress,
   });

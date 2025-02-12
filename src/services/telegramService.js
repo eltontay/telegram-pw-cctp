@@ -279,7 +279,6 @@ class TelegramService {
 
       const [destinationNetwork, destinationAddress, amount] = params;
       const currentNetwork = networkService.getCurrentNetwork();
-      const destinationNetworkUpper = destinationNetwork.toUpperCase();
 
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
 
