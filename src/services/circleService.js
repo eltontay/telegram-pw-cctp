@@ -172,16 +172,19 @@ class CircleService {
         chatId,
         "Step 1/4: Approving USDC transfer...",
       );
+
+      const encodedApproveData = sourceClient.encodeFunctionData({
+        abi: CCTP.abis.usdc,
+        functionName: "approve",
+        args: [sourceConfig.tokenMessenger, amount]
+      });
+
       // Get transaction parameters using viem
       const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
       const estimateGas = await sourceClient.estimateGas({
         account: walletAddress,
         to: sourceConfig.usdc,
-        data: approveTx.encodeFunctionData({
-          abi: CCTP.abis.usdc,
-          functionName: "approve",
-          args: [sourceConfig.tokenMessenger, amount]
-        })
+        data: encodedApproveData
       });
       const gasPrice = await sourceClient.getGasPrice();
       const maxPriorityFeePerGasApprove = await sourceClient.estimateMaxPriorityFeePerGas();
@@ -195,11 +198,7 @@ class CircleService {
         maxFeePerGas: gasPrice.toString(),
         maxPriorityFeePerGas: maxPriorityFeePerGasApprove.toString(),
         chainId: chainId,
-        data: approveTx.encodeFunctionData({
-          abi: CCTP.abis.usdc,
-          functionName: "approve",
-          args: [sourceConfig.tokenMessenger, amount]
-        })
+        data: encodedApproveData
       };
 
       const signedApproveTx = await axios.post(
