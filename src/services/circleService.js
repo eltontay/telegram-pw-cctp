@@ -28,7 +28,6 @@ class CircleService {
         this.walletSDK = await initiateDeveloperControlledWalletsClient({
           apiKey: config.circle.apiKey,
           entitySecret: config.circle.entitySecret,
-          walletSigning: true,
         });
       }
       if (!this.walletSDK) {
