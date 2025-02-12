@@ -172,18 +172,41 @@ class CircleService {
         chatId,
         "Step 1/4: Approving USDC transfer...",
       );
+      // Get transaction parameters using viem
+      const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
+      const estimateGas = await sourceClient.estimateGas({
+        account: walletAddress,
+        to: sourceConfig.usdc,
+        data: approveTx.encodeFunctionData({
+          abi: CCTP.abis.usdc,
+          functionName: "approve",
+          args: [sourceConfig.tokenMessenger, amount]
+        })
+      });
+      const gasPrice = await sourceClient.getGasPrice();
+      const maxPriorityFeePerGas = await sourceClient.estimateMaxPriorityFeePerGas();
+      const chainId = await sourceClient.getChainId();
+
       const approveTx = {
-        address: sourceConfig.usdc,
-        abi: CCTP.abis.usdc,
-        functionName: "approve",
-        args: [sourceConfig.tokenMessenger, amount],
+        nonce: nonce.toString(),
+        to: sourceConfig.usdc,
+        value: "0",
+        gas: estimateGas.toString(),
+        maxFeePerGas: gasPrice.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        chainId: chainId,
+        data: approveTx.encodeFunctionData({
+          abi: CCTP.abis.usdc,
+          functionName: "approve",
+          args: [sourceConfig.tokenMessenger, amount]
+        })
       };
 
       const signedApproveTx = await axios.post(
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: JSON.stringify(approveTx),
+          transaction: approveTx,
         },
         {
           headers: {
@@ -202,25 +225,51 @@ class CircleService {
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
       const maxPriorityFeePerGas =
         await publicClient.estimateMaxPriorityFeePerGas();
+      const burnNonce = await sourceClient.getTransactionCount({ address: walletAddress });
+      const burnEstimateGas = await sourceClient.estimateGas({
+        account: walletAddress,
+        to: sourceConfig.tokenMessenger,
+        data: burnTx.encodeFunctionData({
+          abi: CCTP.abis.tokenMessenger,
+          functionName: "depositForBurn",
+          args: [
+            amount,
+            CCTP.domains[destinationNetwork],
+            destinationAddress,
+            sourceConfig.usdc,
+            maxPriorityFeePerGas.toString(),
+            1000,
+          ]
+        })
+      });
+
       const burnTx = {
-        address: sourceConfig.tokenMessenger,
-        abi: CCTP.abis.tokenMessenger,
-        functionName: "depositForBurn",
-        args: [
-          amount,
-          CCTP.domains[destinationNetwork],
-          destinationAddress,
-          sourceConfig.usdc,
-          maxPriorityFeePerGas.toString(),
-          1000,
-        ],
+        nonce: burnNonce.toString(),
+        to: sourceConfig.tokenMessenger,
+        value: "0",
+        gas: burnEstimateGas.toString(),
+        maxFeePerGas: gasPrice.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        chainId: chainId,
+        data: burnTx.encodeFunctionData({
+          abi: CCTP.abis.tokenMessenger,
+          functionName: "depositForBurn",
+          args: [
+            amount,
+            CCTP.domains[destinationNetwork],
+            destinationAddress,
+            sourceConfig.usdc,
+            maxPriorityFeePerGas.toString(),
+            1000,
+          ]
+        })
       };
 
       const signedBurnTx = await axios.post(
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: JSON.stringify(burnTx),
+          transaction: burnTx,
         },
         {
           headers: {
@@ -254,18 +303,44 @@ class CircleService {
       );
       const destinationConfig = CCTP.contracts[destinationNetwork];
 
+      const destinationClient = createPublicClient({
+        transport: http(CCTP.rpc[destinationNetwork])
+      });
+      
+      const receiveNonce = await destinationClient.getTransactionCount({ address: walletAddress });
+      const receiveEstimateGas = await destinationClient.estimateGas({
+        account: walletAddress,
+        to: destinationConfig.messageTransmitter,
+        data: receiveTx.encodeFunctionData({
+          abi: CCTP.abis.messageTransmitter,
+          functionName: "receiveMessage",
+          args: [attestation.message, attestation.attestation]
+        })
+      });
+      const receiveGasPrice = await destinationClient.getGasPrice();
+      const receiveMaxPriorityFeePerGas = await destinationClient.estimateMaxPriorityFeePerGas();
+      const receiveChainId = await destinationClient.getChainId();
+
       const receiveTx = {
-        address: destinationConfig.messageTransmitter,
-        abi: CCTP.abis.messageTransmitter,
-        functionName: "receiveMessage",
-        args: [attestation.message, attestation.attestation],
+        nonce: receiveNonce.toString(),
+        to: destinationConfig.messageTransmitter,
+        value: "0",
+        gas: receiveEstimateGas.toString(),
+        maxFeePerGas: receiveGasPrice.toString(),
+        maxPriorityFeePerGas: receiveMaxPriorityFeePerGas.toString(),
+        chainId: receiveChainId,
+        data: receiveTx.encodeFunctionData({
+          abi: CCTP.abis.messageTransmitter,
+          functionName: "receiveMessage",
+          args: [attestation.message, attestation.attestation]
+        })
       };
 
       const signedReceiveTx = await axios.post(
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: JSON.stringify(receiveTx),
+          transaction: receiveTx,
         },
         {
           headers: {
