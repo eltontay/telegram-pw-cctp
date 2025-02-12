@@ -281,39 +281,6 @@ class TelegramService {
       const currentNetwork = networkService.getCurrentNetwork();
       const destinationNetworkUpper = destinationNetwork.toUpperCase();
 
-      // if (!CCTP.domains[currentNetwork.name] || !CCTP.contracts[currentNetwork.name]) {
-      //   await this.bot.sendMessage(
-      //     chatId,
-      //     `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}. Use /network to switch to a supported network.`,
-      //   );
-      //   return;
-      // }
-
-      // if (currentNetwork.name === destinationNetworkUpper) {
-      //   await this.bot.sendMessage(
-      //     chatId,
-      //     `Source network (${currentNetwork.name}) cannot be the same as destination network.`,
-      //   );
-      //   return;
-      // }
-
-      // if (!CCTP.domains[destinationNetworkUpper] || !CCTP.contracts[destinationNetworkUpper]) {
-      //   await this.bot.sendMessage(
-      //     chatId,
-      //     `Invalid destination network: ${destinationNetwork}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
-      //   );
-      //   return;
-      // }
-
-      // const userWallet = wallet[currentNetwork.name];
-      // if (!userWallet) {
-      //   await this.bot.sendMessage(
-      //     chatId,
-      //     `No wallet found for ${currentNetwork.name}. Create one first with /createWallet`,
-      //   );
-      //   return;
-      // }
-
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
 
       const userWallet = wallet[currentNetwork.name];
