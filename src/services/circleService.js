@@ -145,12 +145,14 @@ class CircleService {
     chatId,
   ) {
     try {
+      const { getViemClient, buildApproveTransaction, buildBurnTransaction, buildReceiveTransaction } = require('../utils/viem');
+      
       // Initialize SDK first
       await this.init();
-
+      
       // Validate networks
       const currentNetwork = networkService.getCurrentNetwork();
-
+      
       if (!CCTP.contracts[currentNetwork.name]) {
         throw new Error(
           `Invalid source network: ${currentNetwork.name}. Supported networks for CCTP: ${Object.keys(CCTP.domains).join(", ")}`,
@@ -167,104 +169,70 @@ class CircleService {
         throw new Error("Source and destination networks cannot be the same");
       }
 
+      const sourceClient = getViemClient(currentNetwork.name);
+      const sourceConfig = CCTP.contracts[currentNetwork.name];
+      
+      // Get wallet details
+      const walletData = await this.walletSDK.getWallet(walletId);
+      const walletAddress = walletData.data.wallet.address;
+
       // 1. Approve USDC transfer
-      await this.bot.sendMessage(
-        chatId,
-        "Step 1/4: Approving USDC transfer...",
-      );
-      const networks = require("../../data/networks.json");
-      const sourceNetworkConfig = networks[currentNetwork.name];
-
-      const approveTx = await this.walletSDK.createTransaction({
-        walletId: walletId,
-        tokenId: sourceNetworkConfig.usdcTokenId,
-        type: "approve",
-        destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
-        amounts: [amount],
-        fee: {
-          type: "level",
-          config: {
-            feeLevel: "HIGH",
-          },
-        },
+      await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
+      const approveTx = await buildApproveTransaction(sourceClient, walletAddress, sourceConfig, amount);
+      const signedApproveTx = await this.walletSDK.signTransaction({
+        walletId,
+        transaction: JSON.stringify(approveTx),
       });
-      console.log("Approve Transaction Response:", approveTx);
+      
+      await this.bot.sendMessage(chatId, `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`);
 
-      const transactionId =
-        approveTx?.data?.transaction?.id || approveTx?.data?.id;
-      if (!transactionId) {
-        throw new Error("Failed to get transaction ID from response");
-      }
-
-      await this.bot.sendMessage(
-        chatId,
-        `✅ Approval transaction submitted: ${transactionId}`,
+      // 2. Create burn transaction
+      await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
+      const mintRecipient = `0x${destinationAddress.substring(2).padStart(64, "0")}`;
+      const burnTx = await buildBurnTransaction(
+        sourceClient, 
+        walletAddress,
+        sourceConfig,
+        amount,
+        CCTP.domains[destinationNetwork],
+        mintRecipient
       );
-
-      // Create burn transaction
-      await this.bot.sendMessage(chatId, "Step 3/4: Initiating USDC burn...");
-      const destinationDomain = CCTP.domains[destinationNetwork];
-      const burnTx = await this.walletSDK.createTransaction({
-        walletId: walletId,
-        tokenId: sourceNetworkConfig.usdcTokenId,
-        type: "depositForBurn",
-        destinationAddress: CCTP.contracts[currentNetwork.name].tokenMessenger,
-        amounts: [amount],
-        destinationDomain: destinationDomain,
-        mintRecipient: `0x${destinationAddress.padStart(64, "0")}`,
-        burnToken: networks[currentNetwork.name].usdcAddress,
-        fee: {
-          type: "level",
-          config: {
-            feeLevel: "HIGH",
-          },
-        },
+      
+      const signedBurnTx = await this.walletSDK.signTransaction({
+        walletId,
+        transaction: JSON.stringify(burnTx),
       });
+      
+      await this.bot.sendMessage(chatId, `✅ Burn transaction submitted: ${signedBurnTx.data.transactionId}`);
 
-      const burnTransactionId =
-        burnTx?.data?.transaction?.id || burnTx?.data?.id;
-      if (!burnTransactionId) {
-        throw new Error("Failed to get burn transaction ID from response");
-      }
-
-      await this.bot.sendMessage(
-        chatId,
-        `✅ Burn transaction submitted: ${burnTransactionId}`,
-      );
-
-      // 5. Get attestation
-      await this.bot.sendMessage(
-        chatId,
-        "Step 4/4: Waiting for attestation...",
-      );
+      // 3. Get attestation
+      await this.bot.sendMessage(chatId, "Step 3/4: Waiting for attestation...");
       const srcDomainId = CCTP.domains[currentNetwork.name];
-      const attestation = await this.waitForAttestation(
-        srcDomainId,
-        burnTransactionId,
-      );
+      const attestation = await this.waitForAttestation(srcDomainId, signedBurnTx.data.transactionId);
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
-      // 6. Receive on destination chain
-      await this.bot.sendMessage(
-        chatId,
-        "Finalizing transfer on destination chain...",
+      // 4. Receive on destination chain
+      await this.bot.sendMessage(chatId, "Step 4/4: Finalizing transfer on destination chain...");
+      const destinationClient = getViemClient(destinationNetwork);
+      const destinationConfig = CCTP.contracts[destinationNetwork];
+      
+      const receiveTx = await buildReceiveTransaction(
+        destinationClient,
+        walletAddress,
+        destinationConfig,
+        attestation.message,
+        attestation.attestation
       );
-      const receiveTx = await this.walletSDK.createTransaction({
-        walletId: walletId,
-        type: "contract_call",
-        destinationAddress:
-          CCTP.contracts[destinationNetwork].messageTransmitter,
-        contractAbi: [
-          "function receiveMessage(bytes message, bytes attestation)",
-        ],
-        functionName: "receiveMessage",
-        functionArgs: [attestation.message, attestation.attestation],
+      
+      const signedReceiveTx = await this.walletSDK.signTransaction({
+        walletId,
+        transaction: JSON.stringify(receiveTx),
       });
 
       return {
-        approveTx: approveTx.data.transaction.id,
-        burnTx: burnTx.data.transaction.id,
-        receiveTx: receiveTx.data.transaction.id,
+        approveTx: signedApproveTx.data.transactionId,
+        burnTx: signedBurnTx.data.transactionId,
+        receiveTx: signedReceiveTx.data.transactionId,
       };
     } catch (error) {
       console.error("Error in cross-chain transfer:", error);
