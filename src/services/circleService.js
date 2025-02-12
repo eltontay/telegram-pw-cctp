@@ -273,16 +273,14 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
-    const url = `https://api.circle.com/v2/messages/${srcDomainId}?transactionHash=${transactionHash}`;
+    const url = `https://api.circle.com/v2/messages/${srcDomainId}`;
     try {
       while (true) {
-        // const response = await fetch(url, {
-        //   headers: {
-        //     Authorization: `Bearer ${config.circle.apiKey}`
-        //   }
-        // });
-
-        const response = await fetch(url);
+        const response = await fetch(`${url}?transactionHash=${transactionHash}`, {
+          headers: {
+            Authorization: `Bearer ${config.circle.apiKey}`
+          }
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
