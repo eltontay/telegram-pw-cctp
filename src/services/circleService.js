@@ -139,13 +139,13 @@ class CircleService {
 
   async crossChainTransfer(
     walletId,
+    walletAddress,
     destinationNetwork,
     destinationAddress,
     amount,
     chatId,
   ) {
     try {
-      
       // Initialize SDK first
       await this.init();
       
@@ -170,10 +170,6 @@ class CircleService {
 
       const sourceClient = getViemClient(currentNetwork.name);
       const sourceConfig = CCTP.contracts[currentNetwork.name];
-      
-      // Get wallet details
-      const walletData = await this.walletSDK.getWallet(walletId);
-      const walletAddress = walletData.data.wallet.address;
 
       // 1. Approve USDC transfer
       await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
