@@ -184,7 +184,7 @@ class CircleService {
         })
       });
       const gasPrice = await sourceClient.getGasPrice();
-      const maxPriorityFeePerGas = await sourceClient.estimateMaxPriorityFeePerGas();
+      const maxPriorityFeePerGasApprove = await sourceClient.estimateMaxPriorityFeePerGas();
       const chainId = await sourceClient.getChainId();
 
       const approveTx = {
@@ -193,7 +193,7 @@ class CircleService {
         value: "0",
         gas: estimateGas.toString(),
         maxFeePerGas: gasPrice.toString(),
-        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGasApprove.toString(),
         chainId: chainId,
         data: approveTx.encodeFunctionData({
           abi: CCTP.abis.usdc,
@@ -206,7 +206,7 @@ class CircleService {
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: approveTx,
+          transaction: JSON.stringify(approveTx),
         },
         {
           headers: {
@@ -223,7 +223,7 @@ class CircleService {
 
       // 2. Create burn transaction
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
-      const maxPriorityFeePerGas =
+      const maxPriorityFeePerGasBurn =
         await publicClient.estimateMaxPriorityFeePerGas();
       const burnNonce = await sourceClient.getTransactionCount({ address: walletAddress });
       const burnEstimateGas = await sourceClient.estimateGas({
@@ -249,7 +249,7 @@ class CircleService {
         value: "0",
         gas: burnEstimateGas.toString(),
         maxFeePerGas: gasPrice.toString(),
-        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGasBurn.toString(),
         chainId: chainId,
         data: burnTx.encodeFunctionData({
           abi: CCTP.abis.tokenMessenger,
@@ -269,7 +269,7 @@ class CircleService {
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: burnTx,
+          transaction: JSON.stringify(burnTx),
         },
         {
           headers: {
@@ -340,7 +340,7 @@ class CircleService {
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: receiveTx,
+          transaction: JSON.stringify(receiveTx),
         },
         {
           headers: {
