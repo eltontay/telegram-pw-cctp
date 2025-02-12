@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
+const { createPublicClient, http } = require("viem");
 const {
   initiateDeveloperControlledWalletsClient,
 } = require("@circle-fin/developer-controlled-wallets");
@@ -146,11 +147,14 @@ class CircleService {
   ) {
     try {
       const currentNetwork = networkService.getCurrentNetwork();
-      
+
       // Validate networks
-      if (!CCTP.contracts[currentNetwork.name] || !CCTP.contracts[destinationNetwork]) {
+      if (
+        !CCTP.contracts[currentNetwork.name] ||
+        !CCTP.contracts[destinationNetwork]
+      ) {
         throw new Error(
-          `Invalid network. Supported networks: ${Object.keys(CCTP.domains).join(", ")}`
+          `Invalid network. Supported networks: ${Object.keys(CCTP.domains).join(", ")}`,
         );
       }
 
@@ -159,88 +163,116 @@ class CircleService {
       }
 
       const sourceClient = createPublicClient({
-        transport: http(CCTP.rpc[currentNetwork.name])
+        transport: http(CCTP.rpc[currentNetwork.name]),
       });
       const sourceConfig = CCTP.contracts[currentNetwork.name];
 
       // 1. Approve USDC transfer
-      await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 1/4: Approving USDC transfer...",
+      );
       const approveTx = {
         address: sourceConfig.usdc,
         abi: CCTP.abis.usdc,
         functionName: "approve",
-        args: [sourceConfig.tokenMessenger, amount]
+        args: [sourceConfig.tokenMessenger, amount],
       };
+
       const signedApproveTx = await axios.post(
-        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
-          transaction: JSON.stringify(approveTx)
+          transaction: JSON.stringify(approveTx),
         },
         {
           headers: {
-            'Authorization': `Bearer ${config.circle.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
+            Authorization: `Bearer ${config.circle.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
-      
-      await this.bot.sendMessage(chatId, `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`);
+
+      await this.bot.sendMessage(
+        chatId,
+        `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`,
+      );
 
       // 2. Create burn transaction
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
+      const maxPriorityFeePerGas =
+        await publicClient.estimateMaxPriorityFeePerGas();
       const burnTx = {
         address: sourceConfig.tokenMessenger,
         abi: CCTP.abis.tokenMessenger,
         functionName: "depositForBurn",
-        args: [amount, CCTP.domains[destinationNetwork], destinationAddress, sourceConfig.usdc]
+        args: [
+          amount,
+          CCTP.domains[destinationNetwork],
+          destinationAddress,
+          sourceConfig.usdc,
+          maxPriorityFeePerGas.toString(),
+          1000,
+        ],
       };
-      
+
       const signedBurnTx = await axios.post(
-        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
           transaction: JSON.stringify(burnTx),
         },
         {
           headers: {
-            'Authorization': `Bearer ${config.circle.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
+            Authorization: `Bearer ${config.circle.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
-      
-      await this.bot.sendMessage(chatId, `✅ Burn transaction submitted: ${signedBurnTx.data.transactionId}`);
+
+      await this.bot.sendMessage(
+        chatId,
+        `✅ Burn transaction submitted: ${signedBurnTx.data.transactionId}`,
+      );
 
       // 3. Get attestation
-      await this.bot.sendMessage(chatId, "Step 3/4: Waiting for attestation...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 3/4: Waiting for attestation...",
+      );
       const srcDomainId = CCTP.domains[currentNetwork.name];
-      const attestation = await this.waitForAttestation(srcDomainId, signedBurnTx.data.transactionId);
+      const attestation = await this.waitForAttestation(
+        srcDomainId,
+        signedBurnTx.data.transactionId,
+      );
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
       // 4. Receive on destination chain
-      await this.bot.sendMessage(chatId, "Step 4/4: Finalizing transfer on destination chain...");
+      await this.bot.sendMessage(
+        chatId,
+        "Step 4/4: Finalizing transfer on destination chain...",
+      );
       const destinationConfig = CCTP.contracts[destinationNetwork];
-      
+
       const receiveTx = {
         address: destinationConfig.messageTransmitter,
         abi: CCTP.abis.messageTransmitter,
         functionName: "receiveMessage",
-        args: [attestation.message, attestation.attestation]
+        args: [attestation.message, attestation.attestation],
       };
 
       const signedReceiveTx = await axios.post(
-        'https://api.circle.com/v1/w3s/developer/sign/transaction',
+        "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
           walletId,
           transaction: JSON.stringify(receiveTx),
         },
         {
           headers: {
-            'Authorization': `Bearer ${config.circle.apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
+            Authorization: `Bearer ${config.circle.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
 
       return {
@@ -262,11 +294,14 @@ class CircleService {
     const url = `https://api.circle.com/v2/messages/${srcDomainId}`;
     try {
       while (true) {
-        const response = await fetch(`${url}?transactionHash=${transactionHash}`, {
-          headers: {
-            Authorization: `Bearer ${config.circle.apiKey}`
-          }
-        });
+        const response = await fetch(
+          `${url}?transactionHash=${transactionHash}`,
+          {
+            headers: {
+              Authorization: `Bearer ${config.circle.apiKey}`,
+            },
+          },
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
