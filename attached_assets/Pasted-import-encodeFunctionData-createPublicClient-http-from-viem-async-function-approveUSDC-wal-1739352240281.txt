@@ -1,0 +1,71 @@
+import { encodeFunctionData, createPublicClient, http } from 'viem';
+
+async function approveUSDC(walletId, walletAddress, chatId) {
+  try {
+    const currentNetwork = networkService.getCurrentNetwork();
+    const sourceClient = createPublicClient({
+      transport: http(CCTP.rpc[currentNetwork.name]),
+    });
+    const sourceConfig = CCTP.contracts[currentNetwork.name];
+
+    await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
+
+    // Use viem's `encodeFunctionData` for safe encoding
+    const approveData = encodeFunctionData({
+      abi: CCTP.abis.erc20, // Ensure this includes 'approve' function
+      functionName: 'approve',
+      args: [sourceConfig.tokenMessenger, BigInt(amount)],
+    });
+
+    // Estimate gas correctly
+    const estimateGas = await sourceClient.estimateGas({
+      account: walletAddress,
+      to: sourceConfig.usdc,
+      value: 0n,
+      data: approveData,
+    });
+
+    // Fetch gas parameters
+    const gasPrice = await sourceClient.getGasPrice();
+    const maxPriorityFeePerGas = await sourceClient.estimateMaxPriorityFeePerGas();
+    const chainId = await sourceClient.getChainId();
+    const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
+
+    // Construct proper transaction
+    const approveTx = {
+      nonce: nonce,
+      to: sourceConfig.usdc,
+      value: 0n,
+      gas: estimateGas,
+      maxFeePerGas: gasPrice,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
+      chainId: chainId,
+      data: approveData,
+    };
+
+    // Sign transaction via Circle API
+    const signedApproveTx = await axios.post(
+      "https://api.circle.com/v1/w3s/developer/sign/transaction",
+      {
+        walletId,
+        transaction: JSON.stringify(approveTx), // Ensure it's a valid stringified JSON
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${config.circle.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    await this.bot.sendMessage(
+      chatId,
+      `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`,
+    );
+
+    return signedApproveTx.data.transactionId;
+  } catch (error) {
+    console.error("Error approving USDC transfer:", error);
+    throw error;
+  }
+}
