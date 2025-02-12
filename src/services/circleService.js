@@ -1,12 +1,13 @@
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
-const { createPublicClient, http } = require("viem");
+const { createPublicClient, http, encodeFunctionData } = require("viem");
 const {
   initiateDeveloperControlledWalletsClient,
 } = require("@circle-fin/developer-controlled-wallets");
 const config = require("../config/index.js");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
+const forge = require("node-forge");
 
 class CircleService {
   constructor(bot) {
@@ -24,18 +25,45 @@ class CircleService {
 
   async init() {
     try {
-      if (!this.walletSDK && config.circle) {
+      if (!this.walletSDK) {
+        console.log("Initializing Circle Wallet SDK...");
+
         this.walletSDK = await initiateDeveloperControlledWalletsClient({
           apiKey: config.circle.apiKey,
           entitySecret: config.circle.entitySecret,
         });
-      }
-      if (!this.walletSDK) {
-        throw new Error("Failed to initialize Circle SDK");
+
+        console.log("Circle Wallet SDK initialized:", this.walletSDK);
       }
       return this.walletSDK;
     } catch (error) {
       console.error("Error initializing Circle SDK:", error);
+      throw new Error("Failed to initialize Circle SDK: " + error.message);
+    }
+  }
+
+  async generateEntitySecretCiphertext() {
+    try {
+      // Convert entity secret from hex to bytes
+      const entitySecret = forge.util.hexToBytes(config.circle.entitySecret);
+
+      const response = await this.walletSDK.getPublicKey();
+      console.log("response", response.data.publicKey);
+
+      // Convert PEM string to a public key
+      const publicKey = forge.pki.publicKeyFromPem(response.data.publicKey);
+      console.log("publicKey", publicKey);
+
+      // Encrypt using RSA-OAEP with SHA-256
+      const encryptedData = publicKey.encrypt(entitySecret, "RSA-OAEP", {
+        md: forge.md.sha256.create(),
+        mgf1: { md: forge.md.sha256.create() },
+      });
+
+      // Convert encrypted data to Base64 (as required by Circle API)
+      return forge.util.encode64(encryptedData);
+    } catch (error) {
+      console.error("Error encrypting entity secret:", error);
       throw error;
     }
   }
@@ -146,21 +174,8 @@ class CircleService {
     chatId,
   ) {
     try {
+      await this.init();
       const currentNetwork = networkService.getCurrentNetwork();
-
-      // Validate networks
-      if (
-        !CCTP.contracts[currentNetwork.name] ||
-        !CCTP.contracts[destinationNetwork]
-      ) {
-        throw new Error(
-          `Invalid network. Supported networks: ${Object.keys(CCTP.domains).join(", ")}`,
-        );
-      }
-
-      if (currentNetwork.name === destinationNetwork) {
-        throw new Error("Source and destination networks cannot be the same");
-      }
 
       const sourceClient = createPublicClient({
         transport: http(CCTP.rpc[currentNetwork.name]),
@@ -173,39 +188,55 @@ class CircleService {
         "Step 1/4: Approving USDC transfer...",
       );
 
-      // Get transaction parameters using viem
-      const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
-      const encodedApproveData = {
-        data: `0x095ea7b3${sourceConfig.tokenMessenger.slice(2).padStart(64, '0')}${amount.toString(16).padStart(64, '0')}`,
-        to: sourceConfig.usdc,
-        value: '0x0'
-      };
+      const approveData = encodeFunctionData({
+        abi: CCTP.abis.usdc,
+        functionName: "approve",
+        args: [sourceConfig.tokenMessenger, BigInt(amount)],
+      });
+
+      // Estimate gas correctly
       const estimateGas = await sourceClient.estimateGas({
         account: walletAddress,
         to: sourceConfig.usdc,
         value: 0n,
-        data: encodedApproveData
+        data: approveData,
       });
+
+      // Fetch gas parameters
       const gasPrice = await sourceClient.getGasPrice();
-      const maxPriorityFeePerGasApprove =
+      const maxPriorityFeePerGas =
         await sourceClient.estimateMaxPriorityFeePerGas();
       const chainId = await sourceClient.getChainId();
+      const nonce = await sourceClient.getTransactionCount({
+        address: walletAddress,
+      });
+      // Build transaction
 
       const approveTx = {
-        nonce: nonce.toString(),
+        nonce: Number(nonce),
         to: sourceConfig.usdc,
-        value: 0n,
+        value: "0",
         gas: estimateGas.toString(),
         maxFeePerGas: gasPrice.toString(),
-        maxPriorityFeePerGas: maxPriorityFeePerGasApprove.toString(),
-        chainId: chainId,
-        data: encodedApproveData,
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        chainId: Number(chainId),
+        data: approveData,
       };
+
+      const entitySecretCiphertext =
+        await this.generateEntitySecretCiphertext();
+
+      console.log("entitySecretCiphertext:", entitySecretCiphertext);
+
+      console.log(walletId);
+      console.log("approvetx", JSON.stringify(approveTx));
+      console.log("entitySecretCiphertext", entitySecretCiphertext);
 
       const signedApproveTx = await axios.post(
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
-          walletId,
+          entitySecretCiphertext: entitySecretCiphertext,
+          walletId: walletId,
           transaction: JSON.stringify(approveTx),
         },
         {
