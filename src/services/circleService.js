@@ -175,22 +175,11 @@ class CircleService {
 
       // Get transaction parameters using viem
       const nonce = await sourceClient.getTransactionCount({ address: walletAddress });
-      const encodedApproveData = sourceClient.encodeFunctionData({
-        abi: [
-          {
-            inputs: [
-              { name: "spender", type: "address" },
-              { name: "amount", type: "uint256" }
-            ],
-            name: "approve",
-            outputs: [{ name: "", type: "bool" }],
-            stateMutability: "nonpayable",
-            type: "function"
-          }
-        ],
-        functionName: "approve",
-        args: [sourceConfig.tokenMessenger, amount]
-      });
+      const encodedApproveData = {
+        data: `0x095ea7b3${sourceConfig.tokenMessenger.slice(2).padStart(64, '0')}${amount.toString(16).padStart(64, '0')}`,
+        to: sourceConfig.usdc,
+        value: '0x0'
+      };
       const estimateGas = await sourceClient.estimateGas({
         account: walletAddress,
         to: sourceConfig.usdc,
