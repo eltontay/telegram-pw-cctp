@@ -218,17 +218,15 @@ class CircleService {
 
       // 4. Receive on destination chain
       await this.bot.sendMessage(chatId, "Step 4/4: Finalizing transfer on destination chain...");
-      const destinationClient = getViemClient(destinationNetwork);
       const destinationConfig = CCTP.contracts[destinationNetwork];
       
-      const receiveTx = await buildReceiveTransaction(
-        destinationClient,
-        walletAddress,
-        destinationConfig,
-        attestation.message,
-        attestation.attestation
-      );
-    
+      const receiveTx = {
+        address: destinationConfig.messageTransmitter,
+        abi: CCTP.abis.messageTransmitter,
+        functionName: "receiveMessage",
+        args: [attestation.message, attestation.attestation]
+      };
+
       const signedReceiveTx = await axios.post(
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
