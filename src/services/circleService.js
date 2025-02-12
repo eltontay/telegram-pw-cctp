@@ -158,7 +158,9 @@ class CircleService {
         throw new Error("Source and destination networks cannot be the same");
       }
 
-      const sourceClient = getViemClient(currentNetwork.name);
+      const sourceClient = createPublicClient({
+        transport: http(CCTP.rpc[currentNetwork.name])
+      });
       const sourceConfig = CCTP.contracts[currentNetwork.name];
 
       // 1. Approve USDC transfer
