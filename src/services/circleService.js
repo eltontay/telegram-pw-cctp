@@ -6,7 +6,6 @@ const {
 const config = require("../config/index.js");
 const networkService = require("./networkService");
 const CCTP = require("../config/cctp.js");
-const { getViemClient, buildApproveTransaction, buildBurnTransaction, buildReceiveTransaction } = require('../utils/viem');
 
 class CircleService {
   constructor(bot) {
@@ -164,7 +163,12 @@ class CircleService {
 
       // 1. Approve USDC transfer
       await this.bot.sendMessage(chatId, "Step 1/4: Approving USDC transfer...");
-      const approveTx = await buildApproveTransaction(sourceClient, walletAddress, sourceConfig, amount);
+      const approveTx = {
+        address: sourceConfig.usdc,
+        abi: CCTP.abis.usdc,
+        functionName: "approve",
+        args: [sourceConfig.tokenMessenger, amount]
+      };
       const signedApproveTx = await axios.post(
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
@@ -183,22 +187,18 @@ class CircleService {
 
       // 2. Create burn transaction
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
-      const mintRecipient = `0x${destinationAddress.substring(2).padStart(64, "0")}`;
-      const burnTx = await buildBurnTransaction(
-        sourceClient, 
-        walletAddress,
-        sourceConfig,
-        amount,
-        CCTP.domains[destinationNetwork],
-        mintRecipient
-      );
+      const burnTx = {
+        address: sourceConfig.tokenMessenger,
+        abi: CCTP.abis.tokenMessenger,
+        functionName: "depositForBurn",
+        args: [amount, CCTP.domains[destinationNetwork], destinationAddress, sourceConfig.usdc]
+      };
       
       const signedBurnTx = await axios.post(
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: burnTx,
-          blockchain: currentNetwork.name
+          transaction: JSON.stringify(burnTx),
         },
         {
           headers: {
@@ -228,13 +228,12 @@ class CircleService {
         attestation.message,
         attestation.attestation
       );
-      
+    
       const signedReceiveTx = await axios.post(
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: receiveTx,
-          blockchain: destinationNetwork
+          transaction: JSON.stringify(receiveTx),
         },
         {
           headers: {
