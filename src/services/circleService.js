@@ -273,6 +273,10 @@ class CircleService {
   }
 
   async waitForAttestation(srcDomainId, transactionHash) {
+    console.log(`Checking attestation for:
+    Source Domain ID: ${srcDomainId}
+    Transaction Hash: ${transactionHash}
+    `);
     const url = `https://api.circle.com/v2/messages/${srcDomainId}`;
     try {
       while (true) {
