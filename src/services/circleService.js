@@ -169,8 +169,7 @@ class CircleService {
         'https://api.circle.com/v1/w3s/developer/sign/transaction',
         {
           walletId,
-          transaction: approveTx,
-          blockchain: currentNetwork.name
+          transaction: JSON.stringify(approveTx)
         },
         {
           headers: {
