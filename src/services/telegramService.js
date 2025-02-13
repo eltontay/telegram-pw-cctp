@@ -13,10 +13,17 @@ class TelegramService {
       }
       this.bot = new TelegramBot(config.telegram.botToken, { polling: true });
       this.circleService = new CircleService(this.bot);
+
+      // ✅ Wait for SDK initialization before proceeding
+      this.initializeCircleSDK()
+        .then(() => {
+          console.log("Circle SDK successfully initialized");
+        })
+        .catch((error) => {
+          console.error("Failed to initialize Circle SDK:", error);
+        });
+
       this.setupCommands();
-      this.initializeCircleSDK().catch((error) => {
-        console.error("Failed to initialize Circle SDK:", error);
-      });
     } catch (error) {
       console.error("TelegramService initialization error:", error);
       throw error;
@@ -93,6 +100,7 @@ class TelegramService {
     const currentNetwork = networkService.getCurrentNetwork();
 
     try {
+      await this.circleService.init();
       const userWallets = storageService.getWallet(userId) || {};
       if (userWallets[currentNetwork.name]) {
         await this.bot.sendMessage(
@@ -105,7 +113,7 @@ class TelegramService {
       }
 
       const networkName = currentNetwork.name;
-      const walletResponse = await circleService.createWallet(userId);
+      const walletResponse = await this.circleService.createWallet(userId);
       if (!walletResponse?.walletData?.data?.wallets?.[0]) {
         throw new Error(
           "Failed to create wallet - invalid response from Circle API",
@@ -281,7 +289,6 @@ class TelegramService {
       const currentNetwork = networkService.getCurrentNetwork();
 
       await this.bot.sendMessage(chatId, "Initiating cross-chain transfer...");
-
       const userWallet = wallet[currentNetwork.name];
       if (!userWallet) {
         await this.bot.sendMessage(

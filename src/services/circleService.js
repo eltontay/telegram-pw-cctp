@@ -229,7 +229,7 @@ class CircleService {
       console.log("entitySecretCiphertext:", entitySecretCiphertext);
 
       console.log(walletId);
-      console.log("approvetx", JSON.stringify(approveTx));
+      console.log("approvetx", JSON.stringify(approveTx);
       console.log("entitySecretCiphertext", entitySecretCiphertext);
 
       const signedApproveTx = await axios.post(
