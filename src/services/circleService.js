@@ -34,7 +34,7 @@ class CircleService {
       if (!this.walletSDK) {
         console.log("Initializing Circle Wallet SDK...");
 
-        this.walletSDK = await initiateDeveloperControlledWalletsClient({
+        this.walletSDK = initiateDeveloperControlledWalletsClient({
           apiKey: config.circle.apiKey,
           entitySecret: config.circle.entitySecret,
         });
@@ -54,11 +54,9 @@ class CircleService {
       const entitySecret = forge.util.hexToBytes(config.circle.entitySecret);
 
       const response = await this.walletSDK.getPublicKey();
-      console.log("response", response.data.publicKey);
 
       // Convert PEM string to a public key
       const publicKey = forge.pki.publicKeyFromPem(response.data.publicKey);
-      console.log("publicKey", publicKey);
 
       // Encrypt using RSA-OAEP with SHA-256
       const encryptedData = publicKey.encrypt(entitySecret, "RSA-OAEP", {
@@ -80,14 +78,7 @@ class CircleService {
         name: "WalletSet 1",
       });
 
-      // const currentNetwork = networkService.getCurrentNetwork();
-
-      // const accountType = currentNetwork.name.startsWith("AVAX")
-      //   ? "EOA"
-      //   : "SCA";
-
       const walletData = await this.walletSDK.createWallets({
-        // idempotencyKey: uuidv4(),
         blockchains: ["EVM-TESTNET"],
         accountType: "EOA",
         walletSetId: walletSetResponse.data?.walletSet?.id ?? "",
@@ -210,8 +201,6 @@ class CircleService {
         data: approveData,
       });
 
-      console.log("estimated gas is", estimateGas);
-
       // Fetch gas parameters
       const gasPrice = await sourceClient.getGasPrice();
       const maxPriorityFeePerGas =
@@ -251,8 +240,9 @@ class CircleService {
         },
       );
 
-      const approveReceipt = await sourceClient.waitForTransactionReceipt({
-        hash: signedApproveTx.data.data.txHash
+      console.log("hash", signedApproveTx.data.data.txHash);
+      const approveReceipt = await sourceClient.getTransactionReceipt({
+        hash: signedApproveTx.data.data.txHash,
       });
       console.log("Approve transaction receipt:", approveReceipt);
 
@@ -343,7 +333,7 @@ class CircleService {
       );
 
       const burnReceipt = await sourceClient.waitForTransactionReceipt({
-        hash: signedBurnTx.data.data.txHash
+        hash: signedBurnTx.data.data.txHash,
       });
       console.log("Burn transaction receipt:", burnReceipt);
 
