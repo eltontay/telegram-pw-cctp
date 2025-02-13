@@ -251,9 +251,14 @@ class CircleService {
         },
       );
 
+      const approveReceipt = await sourceClient.waitForTransactionReceipt({
+        hash: signedApproveTx.data.data.txHash
+      });
+      console.log("Approve transaction receipt:", approveReceipt);
+
       await this.bot.sendMessage(
         chatId,
-        `✅ Approval transaction submitted: ${signedApproveTx.data.data.txHash}`,
+        `✅ Approval transaction confirmed: ${signedApproveTx.data.data.txHash}`,
       );
 
       // 2. Create burn transaction
@@ -337,9 +342,14 @@ class CircleService {
         },
       );
 
+      const burnReceipt = await sourceClient.waitForTransactionReceipt({
+        hash: signedBurnTx.data.data.txHash
+      });
+      console.log("Burn transaction receipt:", burnReceipt);
+
       await this.bot.sendMessage(
         chatId,
-        `✅ Burn transaction submitted: ${signedBurnTx.data.data.txHash}`,
+        `✅ Burn transaction confirmed: ${signedBurnTx.data.data.txHash}`,
       );
 
       // 3. Get attestation
