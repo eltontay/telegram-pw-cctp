@@ -241,8 +241,10 @@ class CircleService {
       );
 
       console.log("hash", signedApproveTx.data.data.txHash);
-      const approveReceipt = await sourceClient.getTransactionReceipt({
+      const approveReceipt = await sourceClient.waitForTransactionReceipt({
         hash: signedApproveTx.data.data.txHash,
+        timeout: 60_000, // 60 seconds timeout
+        retryCount: 10,
       });
       console.log("Approve transaction receipt:", approveReceipt);
 
