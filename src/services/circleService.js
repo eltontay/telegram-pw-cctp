@@ -240,12 +240,7 @@ class CircleService {
         },
       );
 
-      console.log("hash", signedApproveTx.data.data.txHash);
-      const approveReceipt = await sourceClient.waitForTransactionReceipt({
-        hash: signedApproveTx.data.data.txHash,
-        timeout: 60_000, // 60 seconds timeout
-        retryCount: 10,
-      });
+      console.log("hash", signedApproveTx);
       console.log("Approve transaction receipt:", approveReceipt);
 
       await this.bot.sendMessage(
@@ -334,9 +329,6 @@ class CircleService {
         },
       );
 
-      const burnReceipt = await sourceClient.waitForTransactionReceipt({
-        hash: signedBurnTx.data.data.txHash,
-      });
       console.log("Burn transaction receipt:", burnReceipt);
 
       await this.bot.sendMessage(
