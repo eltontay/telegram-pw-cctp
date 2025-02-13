@@ -1,6 +1,12 @@
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
-const { createPublicClient, http, encodeFunctionData } = require("viem");
+const {
+  createPublicClient,
+  http,
+  encodeFunctionData,
+  getAddress,
+  pad,
+} = require("viem");
 const {
   initiateDeveloperControlledWalletsClient,
 } = require("@circle-fin/developer-controlled-wallets");
@@ -33,7 +39,7 @@ class CircleService {
           entitySecret: config.circle.entitySecret,
         });
 
-        console.log("Circle Wallet SDK initialized:", this.walletSDK);
+        console.log("Circle Wallet SDK initialized");
       }
       return this.walletSDK;
     } catch (error) {
@@ -74,16 +80,16 @@ class CircleService {
         name: "WalletSet 1",
       });
 
-      const currentNetwork = networkService.getCurrentNetwork();
+      // const currentNetwork = networkService.getCurrentNetwork();
 
-      const accountType = currentNetwork.name.startsWith("AVAX")
-        ? "EOA"
-        : "SCA";
+      // const accountType = currentNetwork.name.startsWith("AVAX")
+      //   ? "EOA"
+      //   : "SCA";
 
       const walletData = await this.walletSDK.createWallets({
-        idempotencyKey: uuidv4(),
-        blockchains: [currentNetwork.name],
-        accountType: accountType,
+        // idempotencyKey: uuidv4(),
+        blockchains: ["EVM-TESTNET"],
+        accountType: "EOA",
         walletSetId: walletSetResponse.data?.walletSet?.id ?? "",
       });
       const walletId = walletData.data.wallets[0].id;
@@ -177,6 +183,8 @@ class CircleService {
       await this.init();
       const currentNetwork = networkService.getCurrentNetwork();
 
+      const usdcAmount = BigInt(amount) * BigInt(10 ** 6);
+
       const sourceClient = createPublicClient({
         transport: http(CCTP.rpc[currentNetwork.name]),
       });
@@ -191,7 +199,7 @@ class CircleService {
       const approveData = encodeFunctionData({
         abi: CCTP.abis.usdc,
         functionName: "approve",
-        args: [sourceConfig.tokenMessenger, BigInt(amount)],
+        args: [sourceConfig.tokenMessenger, usdcAmount],
       });
 
       // Estimate gas correctly
@@ -201,6 +209,8 @@ class CircleService {
         value: 0n,
         data: approveData,
       });
+
+      console.log("estimated gas is", estimateGas);
 
       // Fetch gas parameters
       const gasPrice = await sourceClient.getGasPrice();
@@ -226,12 +236,6 @@ class CircleService {
       const entitySecretCiphertext =
         await this.generateEntitySecretCiphertext();
 
-      console.log("entitySecretCiphertext:", entitySecretCiphertext);
-
-      console.log(walletId);
-      console.log("approvetx", JSON.stringify(approveTx);
-      console.log("entitySecretCiphertext", entitySecretCiphertext);
-
       const signedApproveTx = await axios.post(
         "https://api.circle.com/v1/w3s/developer/sign/transaction",
         {
@@ -249,53 +253,74 @@ class CircleService {
 
       await this.bot.sendMessage(
         chatId,
-        `✅ Approval transaction submitted: ${signedApproveTx.data.transactionId}`,
+        `✅ Approval transaction submitted: ${signedApproveTx.data.data.txHash}`,
       );
 
       // 2. Create burn transaction
       await this.bot.sendMessage(chatId, "Step 2/4: Initiating USDC burn...");
+
       const maxPriorityFeePerGasBurn =
-        await publicClient.estimateMaxPriorityFeePerGas();
-      const burnNonce = await sourceClient.getTransactionCount({
-        address: walletAddress,
-      });
-      const burnEstimateGas = await sourceClient.estimateGas({
-        account: walletAddress,
-        to: sourceConfig.tokenMessenger,
-        data: burnTx.encodeFunctionData({
-          abi: CCTP.abis.tokenMessenger,
-          functionName: "depositForBurn",
-          args: [
-            amount,
-            CCTP.domains[destinationNetwork],
-            destinationAddress,
-            sourceConfig.usdc,
-            maxPriorityFeePerGas.toString(),
-            1000,
-          ],
-        }),
+        await sourceClient.estimateMaxPriorityFeePerGas();
+
+      const mintRecipientAddressInBytes32 = pad(
+        getAddress(destinationAddress),
+        { size: 32 },
+      );
+
+      const maxFee = usdcAmount / BigInt(5000);
+
+      console.log("usdcamount", usdcAmount);
+      console.log("destination domain", CCTP.domains[destinationNetwork]);
+      console.log("mintreceipient", mintRecipientAddressInBytes32);
+      console.log("burnToken", sourceConfig.usdc);
+      console.log(
+        "destinationCaller",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+      );
+      console.log("maxFee", maxFee);
+      console.log("minFinalityThreshold", 1000);
+
+      const burnData = encodeFunctionData({
+        abi: CCTP.abis.tokenMessenger,
+        functionName: "depositForBurn",
+        args: [
+          usdcAmount,
+          CCTP.domains[destinationNetwork],
+          mintRecipientAddressInBytes32,
+          sourceConfig.usdc,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          maxFee,
+          1000,
+        ],
       });
 
+      // // Estimate gas correctly
+      // const estimateGasBurn = await sourceClient.estimateGas({
+      //   account: walletAddress,
+      //   to: sourceConfig.tokenMessenger,
+      //   value: 0n,
+      //   data: burnData,
+      // });
+
+      // console.log("estimategasburn", estimateGasBurn);
+
+      // Fetch gas parameters
+      const gasPriceBurn = await sourceClient.getGasPrice();
+      const nonceBurn = await sourceClient.getTransactionCount({
+        address: walletAddress,
+      });
+
+      // Build transaction
+
       const burnTx = {
-        nonce: burnNonce.toString(),
-        to: sourceConfig.tokenMessenger,
+        nonce: Number(nonceBurn),
+        to: sourceConfig.usdc,
         value: "0",
-        gas: burnEstimateGas.toString(),
-        maxFeePerGas: gasPrice.toString(),
+        gas: estimateGas.toString(),
+        maxFeePerGas: gasPriceBurn.toString(),
         maxPriorityFeePerGas: maxPriorityFeePerGasBurn.toString(),
-        chainId: chainId,
-        data: burnTx.encodeFunctionData({
-          abi: CCTP.abis.tokenMessenger,
-          functionName: "depositForBurn",
-          args: [
-            amount,
-            CCTP.domains[destinationNetwork],
-            destinationAddress,
-            sourceConfig.usdc,
-            maxPriorityFeePerGas.toString(),
-            1000,
-          ],
-        }),
+        chainId: Number(chainId),
+        data: burnData,
       };
 
       const signedBurnTx = await axios.post(
@@ -314,7 +339,7 @@ class CircleService {
 
       await this.bot.sendMessage(
         chatId,
-        `✅ Burn transaction submitted: ${signedBurnTx.data.transactionId}`,
+        `✅ Burn transaction submitted: ${signedBurnTx.data.data.txHash}`,
       );
 
       // 3. Get attestation
@@ -325,7 +350,7 @@ class CircleService {
       const srcDomainId = CCTP.domains[currentNetwork.name];
       const attestation = await this.waitForAttestation(
         srcDomainId,
-        signedBurnTx.data.transactionId,
+        signedBurnTx.data.txHash,
       );
       await this.bot.sendMessage(chatId, "✅ Attestation received!");
 
@@ -340,36 +365,39 @@ class CircleService {
         transport: http(CCTP.rpc[destinationNetwork]),
       });
 
-      const receiveNonce = await destinationClient.getTransactionCount({
-        address: walletAddress,
+      const receiveData = encodeFunctionData({
+        abi: CCTP.abis.messageTransmitter,
+        functionName: "receiveMessage",
+        args: [attestation.message, attestation.attestation],
       });
-      const receiveEstimateGas = await destinationClient.estimateGas({
+
+      // Estimate gas correctly
+      const estimateGasReceive = await destinationClient.estimateGas({
         account: walletAddress,
         to: destinationConfig.messageTransmitter,
-        data: receiveTx.encodeFunctionData({
-          abi: CCTP.abis.messageTransmitter,
-          functionName: "receiveMessage",
-          args: [attestation.message, attestation.attestation],
-        }),
+        value: 0n,
+        data: receiveData,
       });
-      const receiveGasPrice = await destinationClient.getGasPrice();
-      const receiveMaxPriorityFeePerGas =
+
+      // Fetch gas parameters
+      const gasPriceReceive = await destinationClient.getGasPrice();
+      const maxPriorityFeePerGasReceieve =
         await destinationClient.estimateMaxPriorityFeePerGas();
-      const receiveChainId = await destinationClient.getChainId();
+      const chainIdReceive = await destinationClient.getChainId();
+      const nonceReceive = await destinationClient.getTransactionCount({
+        address: walletAddress,
+      });
+      // Build transaction
 
       const receiveTx = {
-        nonce: receiveNonce.toString(),
-        to: destinationConfig.messageTransmitter,
+        nonce: Number(nonceReceive),
+        to: destinationConfig.usdc,
         value: "0",
-        gas: receiveEstimateGas.toString(),
-        maxFeePerGas: receiveGasPrice.toString(),
-        maxPriorityFeePerGas: receiveMaxPriorityFeePerGas.toString(),
-        chainId: receiveChainId,
-        data: receiveTx.encodeFunctionData({
-          abi: CCTP.abis.messageTransmitter,
-          functionName: "receiveMessage",
-          args: [attestation.message, attestation.attestation],
-        }),
+        gas: estimateGasReceive.toString(),
+        maxFeePerGas: gasPriceReceive.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGasReceieve.toString(),
+        chainId: Number(chainIdReceive),
+        data: approveData,
       };
 
       const signedReceiveTx = await axios.post(
@@ -387,9 +415,9 @@ class CircleService {
       );
 
       return {
-        approveTx: signedApproveTx.data.transactionId,
-        burnTx: signedBurnTx.data.transactionId,
-        receiveTx: signedReceiveTx.data.transactionId,
+        approveTx: signedApproveTx.data.data.txHash,
+        burnTx: signedBurnTx.data.data.txHash,
+        receiveTx: signedReceiveTx.data.data.txHash,
       };
     } catch (error) {
       console.error("Error in cross-chain transfer:", error);
